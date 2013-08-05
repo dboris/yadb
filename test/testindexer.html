@@ -1,0 +1,31 @@
+﻿<html>
+<head>
+	<meta charset="UTF-8" />
+	<title>QUnit Test Suite - Ksana DB test</title>
+	<link rel="stylesheet" href="../../libs/qunit.css" type="text/css" media="screen">
+	
+	<script type="text/javascript" data-main="testindexer" src="../../libs/require.js"></script>
+	<script>
+      require.config({baseUrl:'../',   	 // set test environment same as production ( js folder )
+        paths: {
+		    jquery: '../libs/jquery',
+		    jqueryui: '../libs/jquery-ui-latest', 
+		    underscore: '../libs/underscore',
+		    backbone: '../libs/backbone', 
+		    qunit: '../libs/qunit',
+		    tokenizer:'../ksanacjk/tokenizer',
+		    cjkutil:'../ksanacjk/cjkutil',
+		    iosurrogate:'../ksanacjk/iosurrogate'
+		    }
+	});
+	</script>
+</head>
+<body>
+	<h1 id="qunit-header">Ksana Database and Search Engine Test Suite</h1>
+	<h2 id="qunit-banner"></h2>
+	<div id="qunit-testrunner-toolbar"></div>
+	<h2 id="qunit-userAgent"></h2>
+	<ol id="qunit-tests"></ol>
+</body>
+
+</html>

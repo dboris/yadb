@@ -1,0 +1,13 @@
+#!/opt/local/bin/node
+require('../yadb2');
+var J = {
+	a:{b:{c:{d:{text:'abcd'}}}},
+	e:{f:{g:{h:{text:'efgh'}}}}
+	}
+saveJSON('arr.ya', J)
+
+var db = new Yadb()
+db.open('arr.ya')
+var tx = db.cd(['a','b','c','d'])
+console.log(JSON.stringify(tx.read('text'),'',' '))
+console.log('should output "abcd"')
