@@ -69,7 +69,7 @@ var Create=function(path,opts) {
 	}
 	var free=function() {
 		fs.fsync(handle, function() {
-			console.log('sync closing ',handle);
+			//console.log('sync closing ',handle);
 			fs.closeSync(handle);
 		});
 	}

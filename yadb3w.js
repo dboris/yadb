@@ -223,7 +223,6 @@ var Create=function(path,opts) {
 	}
 	
 	var free=function() {
-		console.log('free');
 		while (folders.length) close();
 		yfs.free();
 	}

@@ -167,12 +167,20 @@ var Create=function(path,opts) {
 		cur=0;
 		CACHE=load({lazy:true});
 	}
-
+	var getall=function() {
+		var output={};
+		var keys=getkeys();
+		for (var i in keys) {
+			output[keys[i]]= get([keys[i]],true);
+		}
+		return output;
+		
+	}
 	var get=function(path,recursive) {
 		recursive=recursive||false;
 		if (!CACHE) reset();	
 		var o=CACHE;
-
+		if (path.length==0 &&recursive) return getall();
 		var pathnow="";
 		for (var i in path) {
 			var r=o[path[i]] ;
@@ -206,13 +214,18 @@ var Create=function(path,opts) {
 		
 	}
 
-	this.free=yfs.free;
+	this.free=function() {
+		CACHE=null;
+		KEYS=null;
+		yfs.free();
+	}
 	this.load=load;
 	this.cache=function() {return CACHE};
 	this.keys=getkeys;
 	this.get=get;   // get a field, load if needed
 	this.getJSON=get; //compatible with yadb2
 	this.size=yfs.size;
+
 }
 
 Create.datatypes=DT;
