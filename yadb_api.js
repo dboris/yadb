@@ -1,4 +1,5 @@
-﻿var fs=require('fs');
+﻿/* yadb pool */
+var fs=require('fs');
 var Yadb=require('./yadb3');
 var DB={};
 var ydbfiles=[];
@@ -10,18 +11,47 @@ var known=function(id) {
 		}
 	}
 };
-var opendb=function(dbname) {
-	var k=known(dbname);
-	if (k && DB[k]) return DB[k];	
+/* try working folder first, than other folders, finally ydb folder*/
+var open=function(dbname) {
+	var dbid="";
+	/* TODO , ydb in the index.html folder has top priority */
+	var cwd=process.cwd();
+	var working=cwd.substring(1+cwd.replace(/\\/g,'/').lastIndexOf('/'));
+
+	if (dbname.indexOf('/'==-1)) { //if not folder is specified, check working first
+		if ( fs.existsSync(dbname+'.ydb') ) {
+			dbname=working+'/'+dbname;
+			console.log('current folder',working)
+		}		
+	}
+
+	dbid=known(dbname);
+	if (dbid && DB[dbid]) return DB[dbid];	
 
 	if (dbname.indexOf('.ydb')==-1) dbname+='.ydb';
-	if (ydbfiles.indexOf(dbname) ==-1 ) return;
+	if (ydbfiles.indexOf(dbname) ==-1 && dbname.indexOf('/'==-1) ) {
+		//try other folder
+		for (var i in ydbfiles) {
+			var y=ydbfiles[i];
+			if (y.substring(y.lastIndexOf('/'))=='/'+dbname) {
+				dbname=y;
+				break;
+			}
+		}
+	}
 	
+	if (ydbfiles.indexOf(dbname) ==-1 ) {
+		throw 'db not found';
+		return;
+	}
+
 	if (DB[dbname]) return DB[dbname];
 	var oldpath=process.cwd();
 	process.chdir('..');
 	var db=new Yadb(dbname);
+	console.log('watching ',dbname);
 	fs.watchFile(dbname,function(curr,prev){
+
 		if (curr.mtime - prev.mtime) {
 			console.log('free '+dbname+' as file changed');
 			if (DB[dbname]) {
@@ -94,21 +124,23 @@ var getRaw=function(path) {
 	} else if (p) {
 		var dbname=p.shift();
 		dbname=dbname.replace(':','/');
-		var db=opendb(dbname);
+		var db=open(dbname);
 		res=db.get(p);
 	}
 	return res;
 }
-var initialize=function() {};
 
 var installservice=function(services) { // so that it is possible to call other services
-	services['yadb']={ 
+	var API={ 
 		listydb:listydb,
-		getRaw:getRaw,	
-		initialize:initialize
+		getRaw:getRaw,
+		open:open
 	};
+
+	services['yadb']=API;
 	ydbfiles=listydb('..','ydb'); //search app folder first
 	ydbfiles=ydbfiles.concat( listydb('../ydb','ydb') ); // default folder
 	console.info("yadb installed, found ydb",ydbfiles);
+	return API;
 }
 module.exports=installservice;
