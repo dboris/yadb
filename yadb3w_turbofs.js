@@ -63,6 +63,12 @@ var Create=function(path,opts) {
 		if (pos+2>cur) cur=pos+2;
 		return 2;
 	}
+	var writeBool=function(value,pos) {
+		dbuf.write(DT.bool,pos,1,'utf8');
+		dbuf.writeUInt8(Number(value),pos+1);
+		if (pos+2>cur) cur=pos+2;
+		return 2;
+	}		
 	/* no signature */
 	var writeFixedArray = function(value,pos,unitsize) {
 		//console.log('v.len',value.length,items.length,unitsize);
@@ -83,6 +89,7 @@ var Create=function(path,opts) {
 		});
 	}
 	this.writeI32=writeI32;
+	this.writeBool=writeBool;
 	this.writeUI8=writeUI8;
 	this.writeString=writeString;
 	this.writeSignature=writeSignature;

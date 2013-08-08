@@ -49,6 +49,19 @@ vows.describe('yadb3w test suite').addBatch({
 		},
 		close: function(topic) { topic.free();}
 	},
+  'write boolean': {
+		topic: function () {return new Yadb3w_fs('boolw.ydb');},
+		bool: function(topic) {topic.writeBool(true,0);},
+		close: function(topic) { topic.free();}
+	},
+	'test write boolean': {
+		topic: function () {return new Yadb3('boolw.ydb');},
+		bool: function(topic) {
+			var out=topic.load();
+			assert.equal(out,true,'test write int8');
+		},
+		close: function(topic) { topic.free();}
+	},	
   'write utf8': {
 		topic: function () {return new Yadb3w_fs('utf8w.ydb');},
 		u32: function(topic) {topic.writeString('abc',0,'utf8');},

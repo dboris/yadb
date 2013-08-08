@@ -11,12 +11,14 @@ var DT={
 	int32:'4', // signed 4 bytes integer
 	utf8:'8',  
 	ucs2:'2',
+	bool:'^', 
 	utf8arr:'*', //shift of 8
 	ucs2arr:'@', //shift of 2
 	uint8arr:'!', //shift of 1
 	int32arr:'$', //shift of 4
 	vint:'`',
-	pint:'~',		
+	pint:'~',	
+
 	array:'\u001b',
 	object:'\u001a' 
 	//ydb start with object signature,
@@ -145,7 +147,10 @@ var Create=function(path,opts) {
 		} else if (signature===DT.ucs2) {
 			var c=cur;cur+=datasize;
 			return yfs.readString(c,datasize,'ucs2');	
-		} 
+		} else if (signature===DT.bool) {
+			cur++;
+			return !!(yfs.readUI8(cur-1));
+		}
 		//variable length integers
 		else if (signature===DT.vint) return loadVInt(datasize);
 		else if (signature===DT.pint) return loadPInt(datasize);

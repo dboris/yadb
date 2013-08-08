@@ -86,7 +86,13 @@ var Create=function(path,opts) {
 		cur+=written;
 		pushitem(key,written);
 		return written;
-	}	
+	}
+	var saveBool=function(value,key) {
+		var written=yfs.writeBool(value,cur);
+		cur+=written;
+		pushitem(key,written);
+		return written;
+	}
 	var saveI32 = function(value,key) {
 		var written=yfs.writeI32(value,cur);
 		cur+=written;
@@ -217,6 +223,8 @@ var Create=function(path,opts) {
 		} else if (type==='Number') {
 			if (J>=0&&J<256) saveUI8(J,key);
 			else saveI32(J,key);
+		} else if (type==='Boolean') {
+			saveBool(J,key);
 		} else {
 			throw 'unsupported type '+type;
 		}
@@ -232,6 +240,7 @@ var Create=function(path,opts) {
 	this.free=free;
 	this.saveI32=saveI32;
 	this.saveUI8=saveUI8;
+	this.saveBool=saveBool;
 	this.saveString=saveString;
 	this.saveVInt=saveVInt;
 	this.savePInt=savePInt;
