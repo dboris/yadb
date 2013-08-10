@@ -17,11 +17,10 @@ var open=function(dbname) {
 	/* TODO , ydb in the index.html folder has top priority */
 	var cwd=process.cwd();
 	var working=cwd.substring(1+cwd.replace(/\\/g,'/').lastIndexOf('/'));
-
-	if (dbname.indexOf('/'==-1)) { //if not folder is specified, check working first
+	if (dbname.indexOf('/')==-1) { //if not folder is specified, check working first
 		if ( fs.existsSync(dbname+'.ydb') ) {
 			dbname=working+'/'+dbname;
-			console.log('current folder',working)
+			console.log('current folder',working,'new name',dbname)
 		}		
 	}
 
@@ -47,7 +46,8 @@ var open=function(dbname) {
 
 	if (DB[dbname]) return DB[dbname];
 	var oldpath=process.cwd();
-	process.chdir('..');
+	//node_webkit working folder is same as index.html
+	if (process.versions['node-webkit']) process.chdir('..');
 	var db=new Yadb(dbname);
 	console.log('watching ',dbname);
 	fs.watchFile(dbname,function(curr,prev){
