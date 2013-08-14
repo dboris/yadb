@@ -16,6 +16,7 @@ var open=function(dbname) {
 	var dbid="";
 	/* TODO , ydb in the index.html folder has top priority */
 	var cwd=process.cwd();
+	dbname=dbname.replace(':','/');
 	var working=cwd.substring(1+cwd.replace(/\\/g,'/').lastIndexOf('/'));
 	if (dbname.indexOf('/')==-1) { //if not folder is specified, check working first
 		if ( fs.existsSync(dbname+'.ydb') ) {
@@ -129,7 +130,7 @@ var getRaw=function(path) {
 	}
 	return res;
 }
-
+var initialized=false;
 var installservice=function(services) { // so that it is possible to call other services
 	var API={ 
 		listydb:listydb,
@@ -137,10 +138,13 @@ var installservice=function(services) { // so that it is possible to call other 
 		open:open
 	};
 
-	services['yadb']=API;
-	ydbfiles=listydb('..','ydb'); //search app folder first
-	ydbfiles=ydbfiles.concat( listydb('../ydb','ydb') ); // default folder
-	console.info("yadb installed, found ydb",ydbfiles);
+	if (!initialized) {
+		services['yadb']=API;
+		ydbfiles=listydb('..','ydb'); //search app folder first
+		ydbfiles=ydbfiles.concat( listydb('../ydb','ydb') ); // default folder
+		console.info("yadb installed, found ydb",ydbfiles);
+	}
+	initialized=true;
 	return API;
 }
 module.exports=installservice;
