@@ -123,10 +123,15 @@ var getRaw=function(path) {
 	if (!p || p.length==0) {
 		res=enumydb();
 	} else if (p) {
+		var recursive=false;
+		if (p.substring(p.length-2)=='/*') {
+			p=p.substring(0,p.length-2);
+			recursive=true;
+		}
 		var dbname=p.shift();
 		dbname=dbname.replace(':','/');
 		var db=open(dbname);
-		res=db.get(p);
+		res=db.get(p,recursive);
 	}
 	return res;
 }
@@ -138,13 +143,13 @@ var installservice=function(services) { // so that it is possible to call other 
 		open:open
 	};
 
-	if (!initialized) {
+	if (!initialized && services) {
 		services['yadb']=API;
 		ydbfiles=listydb('..','ydb'); //search app folder first
 		ydbfiles=ydbfiles.concat( listydb('../ydb','ydb') ); // default folder
 		console.info("yadb installed, found ydb",ydbfiles);
+		initialized=true;
 	}
-	initialized=true;
 	return API;
 }
 module.exports=installservice;
