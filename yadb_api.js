@@ -124,8 +124,8 @@ var getRaw=function(path) {
 		res=enumydb();
 	} else if (p) {
 		var recursive=false;
-		if (p.substring(p.length-2)=='/*') {
-			p=p.substring(0,p.length-2);
+		if (p[p.length-1]=='*') {
+			p.pop();
 			recursive=true;
 		}
 		var dbname=p.shift();
@@ -140,7 +140,8 @@ var installservice=function(services) { // so that it is possible to call other 
 	var API={ 
 		listydb:listydb,
 		getRaw:getRaw,
-		open:open
+		open:open,
+		version: require('./package.json').version
 	};
 
 	if (!initialized && services) {
