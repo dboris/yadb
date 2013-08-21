@@ -187,7 +187,7 @@ var Create=function(path,opts) {
 		var o=CACHE;
 		if (path.length==0 &&recursive) return getall();
 		var pathnow="";
-		for (var i in path) {
+		for (var i=0;i<path.length;i++) {
 			var r=o[path[i]] ;
 			if (parseInt(i)) pathnow+="\0";
 			pathnow+=path[i];
@@ -197,7 +197,8 @@ var Create=function(path,opts) {
 				var p=r.substring(1).split("\0").map(
 					function(item){return parseInt(item,16)});
 				cur=p[0];
-				o[path[i]]=load({lazy:!recursive,blocksize:p[1],keys:keys});
+				var lazy=!recursive || (i<path.length-1) ;
+				o[path[i]]=load({lazy:lazy,blocksize:p[1],keys:keys});
 				KEYS[pathnow]=keys;
 				o=o[path[i]];
 			} else {
