@@ -98,7 +98,7 @@ var Create=function(path,opts) {
 		return out;
 	}
 	var free=function() {
-		console.log('closing ',handle);
+		//console.log('closing ',handle);
 		fs.closeSync(handle);
 	}
 	

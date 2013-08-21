@@ -230,7 +230,7 @@ var Create=function(path,opts) {
 	this.get=get;   // get a field, load if needed
 	this.getJSON=get; //compatible with yadb2
 	this.size=yfs.size;
-
+	return this;
 }
 
 Create.datatypes=DT;
