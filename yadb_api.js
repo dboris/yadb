@@ -118,20 +118,25 @@ var listydb=function(path, ext) {
 	return output;
 }
 var getRaw=function(path) {
+	var fetch=function(P) {
+		var recursive=false;
+		if (P[P.length-1]=='*') {
+			P.pop();
+			recursive=true;
+		}
+		var dbname=P.shift();
+		dbname=dbname.replace(':','/');
+		var db=open(dbname);
+		return db.get(P,recursive);		
+	}
 	var p=JSON.parse(JSON.stringify(path));
-	var res=null;
+	var res=[];
 	if (!p || p.length==0) {
 		res=enumydb();
 	} else if (p) {
-		var recursive=false;
-		if (p[p.length-1]=='*') {
-			p.pop();
-			recursive=true;
-		}
-		var dbname=p.shift();
-		dbname=dbname.replace(':','/');
-		var db=open(dbname);
-		res=db.get(p,recursive);
+		if (typeof p[0]=="object") {
+			for (var i in p) res.push( fetch(p[i]));
+		} else res=fetch(p);
 	}
 	return res;
 }
