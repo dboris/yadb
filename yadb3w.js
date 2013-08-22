@@ -249,6 +249,7 @@ var Create=function(path,opts) {
 	this.openArray=openArray;
 	this.openObject=openObject;
 	this.stringEncoding=stringEncoding;
+	this.integerEncoding=integerEncoding;
 	this.close=close;
 	this.currentsize=currentsize;
 }
