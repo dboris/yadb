@@ -39,10 +39,11 @@ var open=function(dbname) {
 			}
 		}
 	}
-	
-	if (ydbfiles.indexOf(dbname) ==-1 ) {
-		throw 'db not found';
-		return;
+	if (!fs.existsSync(dbname)) {
+		if (ydbfiles.indexOf(dbname) ==-1 ) {
+			throw 'db not found';
+			return;
+		}		
 	}
 
 	if (DB[dbname]) return DB[dbname];
