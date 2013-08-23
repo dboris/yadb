@@ -71,7 +71,6 @@ var Create=function(path,opts) {
 	}		
 	var writeBlob=function(value,pos) {
 		dbuf.write(DT.blob,pos,1,'utf8');
-		//dbuf.write(value,pos,value.length);
 		value.copy(dbuf, pos+1);
 		var written=value.length+1;
 		if (pos+written>cur) cur=pos+written;
