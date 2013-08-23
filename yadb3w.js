@@ -114,7 +114,13 @@ var Create=function(path,opts) {
 		return written;
 	}
 	
-	
+	var saveBlob = function(value,key) {
+		var written=yfs.writeBlob(value,cur);
+		cur+=written;
+		pushitem(key,written);
+		return written;
+	}
+
 	var folders=[];
 	var pushitem=function(key,written) {
 		var folder=folders[folders.length-1];	
@@ -225,6 +231,8 @@ var Create=function(path,opts) {
 			else saveI32(J,key);
 		} else if (type==='Boolean') {
 			saveBool(J,key);
+		} else if (type==='Buffer') {
+			saveBlob(J,key);
 		} else {
 			throw 'unsupported type '+type;
 		}
@@ -245,6 +253,7 @@ var Create=function(path,opts) {
 	this.saveVInt=saveVInt;
 	this.savePInt=savePInt;
 	this.saveInts=saveInts;
+	this.saveBlob=saveBlob;
 	this.save=save;
 	this.openArray=openArray;
 	this.openObject=openObject;

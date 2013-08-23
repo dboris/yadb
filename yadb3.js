@@ -12,6 +12,7 @@ var DT={
 	utf8:'8',  
 	ucs2:'2',
 	bool:'^', 
+	blob:'&',
 	utf8arr:'*', //shift of 8
 	ucs2arr:'@', //shift of 2
 	uint8arr:'!', //shift of 1
@@ -126,6 +127,11 @@ var Create=function(path,opts) {
 		var o=yfs.readFixedArray(cur,count,unitsize);
 		cur+=count*unitsize;
 		return o;
+	}
+	var loadBlob=function(blocksize) {
+		var o=yfs.readBuf(cur,blocksize);
+		cur+=blocksize;
+		return o;
 	}	
 	
 	var load=function(opts) {
@@ -150,6 +156,8 @@ var Create=function(path,opts) {
 		} else if (signature===DT.bool) {
 			cur++;
 			return !!(yfs.readUI8(cur-1));
+		} else if (signature===DT.blob) {
+			return loadBlob(datasize);
 		}
 		//variable length integers
 		else if (signature===DT.vint) return loadVInt(datasize);

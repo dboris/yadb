@@ -66,6 +66,7 @@ var Create=function(path,opts) {
 	var readBuf=function(pos,blocksize) {
 		var buf=new Buffer(blocksize);
 		fs.readSync(handle,buf,0,blocksize,pos);
+	
 		return buf;
 	}
 	var readBuf_packedint=function(pos,blocksize,count,reset) {

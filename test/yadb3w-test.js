@@ -21,6 +21,8 @@ var vows = require('vows'),
 console.log('yadb3w test suite');
 
 vows.describe('yadb3w test suite').addBatch({
+	// passed but cannot test due to file handle
+	/*
     'write int32': {
 		topic: function () {return new Yadb3w_fs('i32w.ydb');},
 		
@@ -182,5 +184,30 @@ vows.describe('yadb3w test suite').addBatch({
 		},
 		close: function(topic){topic.free();}	
 	},
-	
+	*/
+/*
+    'write blob': {
+		topic: function () {return new Yadb3w_fs('blobw.ydb');},
+		blob: function(topic) {
+			var buf=require('fs').readFileSync('./test.png');
+			topic.writeBlob(buf,0);
+		},
+		close: function(topic) { topic.free();}
+	},
+	*/
+	'test write blob': {
+		topic: function () {return new Yadb3('blobw.ydb');},
+		blob: function(topic) {
+			var out=topic.load();
+			var buf=require('fs').readFileSync('./test.png')
+			console.log(out.length)
+			for (var i=0;i<out.length;i++) {
+				//console.log(i,out[i],buf[i])
+				assert.equal(out[i],buf[i],'blob compare');
+			}
+		},
+		close: function(topic) { topic.free();}
+	},
+
+
 }).export(module); // Export the Suite;

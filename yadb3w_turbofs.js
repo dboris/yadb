@@ -69,6 +69,14 @@ var Create=function(path,opts) {
 		if (pos+2>cur) cur=pos+2;
 		return 2;
 	}		
+	var writeBlob=function(value,pos) {
+		dbuf.write(DT.blob,pos,1,'utf8');
+		//dbuf.write(value,pos,value.length);
+		value.copy(dbuf, pos+1);
+		var written=value.length+1;
+		if (pos+written>cur) cur=pos+written;
+		return written;
+	}		
 	/* no signature */
 	var writeFixedArray = function(value,pos,unitsize) {
 		//console.log('v.len',value.length,items.length,unitsize);
@@ -90,6 +98,7 @@ var Create=function(path,opts) {
 	}
 	this.writeI32=writeI32;
 	this.writeBool=writeBool;
+	this.writeBlob=writeBlob;
 	this.writeUI8=writeUI8;
 	this.writeString=writeString;
 	this.writeSignature=writeSignature;

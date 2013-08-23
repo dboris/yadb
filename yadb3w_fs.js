@@ -59,7 +59,14 @@ var Create=function(path,opts) {
 		buffer.write(DT.bool,0,1);
 		buffer.writeUInt8(Number(value),1);
 		return fs.writeSync(handle,buffer,0,2,pos);
+	}
+	var writeBlob=function(value,pos) {
+		var written=writeSignature(DT.blob,pos);
+		pos+=written;
+		written+=fs.writeSync(handle,value,0,value.length,pos+1);
+		return written;
 	}	
+
 	/* no signature */
 	var writeFixedArray = function(value,pos,unitsize) {
 		var items=new Buffer(unitsize* value.length);
@@ -81,6 +88,7 @@ var Create=function(path,opts) {
 	}
 	this.writeI32=writeI32;
 	this.writeBool=writeBool;
+	this.writeBlob=writeBlob;
 	this.writeUI8=writeUI8;
 	this.writeString=writeString;
 	this.writeSignature=writeSignature;

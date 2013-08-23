@@ -21,7 +21,7 @@ var open=function(dbname) {
 	if (dbname.indexOf('/')==-1) { //if not folder is specified, check working first
 		if ( fs.existsSync(dbname+'.ydb') ) {
 			dbname=working+'/'+dbname;
-			console.log('current folder',working,'new name',dbname)
+			//console.log('current folder',working,'new name',dbname)
 		}		
 	}
 
