@@ -11,7 +11,8 @@ var Create=function(path,opts) {
 	
 	var handle=null;
 	opts=opts||{};
-	opts.size=opts.size||65536*12288; //dege.ydb
+	opts.size=opts.size||65536*2048; 
+	console.log('ydb estimate size:',opts.size);
 	var dbuf=new Buffer(opts.size);
 	var cur=0;//dbuf cursor
 	

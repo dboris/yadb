@@ -1,6 +1,6 @@
 {
   "name": "yadb",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "Ksana Database Engine",
   "main": "index.js",
   "scripts": {
