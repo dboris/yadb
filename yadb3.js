@@ -197,9 +197,10 @@ var Create=function(path,opts) {
 		var pathnow="";
 		for (var i=0;i<path.length;i++) {
 			var r=o[path[i]] ;
+
+			if (r===undefined) return undefined;
 			if (parseInt(i)) pathnow+="\0";
 			pathnow+=path[i];
-			if (r===undefined) return undefined;
 			if (r[0]=="\0") { //offset of data to be loaded
 				var keys=[];
 				var p=r.substring(1).split("\0").map(
@@ -244,4 +245,4 @@ var Create=function(path,opts) {
 
 Create.datatypes=DT;
 if (module) module.exports=Create;
-return Create;
+//return Create;

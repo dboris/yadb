@@ -191,6 +191,16 @@ var Create=function(path,opts) {
 			return true;
 		return false;
 	}
+	var sorted_ints=function(arr) {
+		if (arr.length<2) return true;
+
+		for (var i=1;i<arr.length;i++) {
+			if (arr[i]<arr[i-1]) {
+				return false;
+			}
+		}
+		return true;
+	}
 	var allstring_fast=function(arr) {
 		if (typeof arr[0]=='string') return true;
 		return false;
@@ -206,7 +216,7 @@ var Create=function(path,opts) {
 		integerEncoding(opts.integerEncoding);
 		
 		if (typeof J=="null" || typeof J=="undefined") {
-			throw 'cannot save null';
+			throw 'cannot save null value of '+key;
 			return;
 		}
 		var type=J.constructor.name;
@@ -216,7 +226,14 @@ var Create=function(path,opts) {
 			close();
 		} else if (type==='Array') {
 			if (allnumber_fast(J) && intarrfunc ) {
-				saveInts(J,key);
+				if (intarrfunc==saveVInt && sorted_ints(J)) {
+					intarrfunc=savePInt;
+					//console.log('using smaller format',key)
+					saveInts(J,key);	//switch to delta format
+					intarrfunc=saveVInt;
+				} else {
+					saveInts(J,key);	
+				}
 			} else if (allstring_fast(J)) {
 				saveStringArray(J,key);
 			} else {

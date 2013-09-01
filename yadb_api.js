@@ -147,7 +147,7 @@ var installservice=function(services) { // so that it is possible to call other 
 		listydb:listydb,
 		getRaw:getRaw,
 		open:open,
-		version: require('./package.json').version
+		version: function() { return require('./package.json').version }
 	};
 
 	if (!initialized && services) {
