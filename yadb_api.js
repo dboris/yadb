@@ -12,7 +12,7 @@ var known=function(id) {
 	}
 };
 /* try working folder first, than other folders, finally ydb folder*/
-var open=function(dbname) {
+var open=function(dbname,opts) {
 	var dbid="";
 	/* TODO , ydb in the index.html folder has top priority */
 	var cwd=process.cwd();
@@ -51,17 +51,19 @@ var open=function(dbname) {
 	//node_webkit working folder is same as index.html
 	if (process.versions['node-webkit']) process.chdir('..');
 	var db=new Yadb(dbname);
-	console.log('watching ',dbname);
-	fs.watchFile(dbname,function(curr,prev){
+	if (!opts.nowatch) {
+		console.log('watching ',dbname);
+		fs.watchFile(dbname,function(curr,prev){
 
-		if (curr.mtime - prev.mtime) {
-			console.log('free '+dbname+' as file changed');
-			if (DB[dbname]) {
-				DB[dbname].free();
-				DB[dbname]=null;
+			if (curr.mtime - prev.mtime) {
+				console.log('free '+dbname+' as file changed');
+				if (DB[dbname]) {
+					DB[dbname].free();
+					DB[dbname]=null;
+				}
 			}
-		}
-	});
+		});		
+	}
 	if (db) DB[dbname]=db;
 	process.chdir(oldpath)
 	return db;
