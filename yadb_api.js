@@ -13,6 +13,7 @@ var known=function(id) {
 };
 /* try working folder first, than other folders, finally ydb folder*/
 var open=function(dbname,opts) {
+	opts=opts||{};
 	var dbid="";
 	/* TODO , ydb in the index.html folder has top priority */
 	var cwd=process.cwd();
