@@ -69,6 +69,14 @@ var open=function(dbname,opts) {
 	process.chdir(oldpath)
 	return db;
 }
+var closeAll=function() {
+	for (var i in DB) {
+		console.log('unwatch and free '+i);
+		if (DB[i].watched) fs.unwatch(i);
+		DB[i].free();
+		DB[i]=null;
+	}
+}
 var enumydb=function() {
 	var output={};
 	var dbnames=[];
@@ -149,6 +157,7 @@ var installservice=function(services) { // so that it is possible to call other 
 	var API={ 
 		listydb:listydb,
 		getRaw:getRaw,
+		closeAll:closeAll,
 		open:open,
 		version: function() { return require('./package.json').version }
 	};

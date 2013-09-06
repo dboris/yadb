@@ -114,7 +114,7 @@ var Create=function(path,opts) {
 	this.readStringArray=readStringArray;
 	this.signature_size=signature_size;
 	this.free=free;
-	
+	this.watched=false;
 	handle=fs.openSync(path,'r');
 	//console.log('watching '+path);
 	if (opts.watch) {
@@ -123,7 +123,8 @@ var Create=function(path,opts) {
 				console.log(path+' changed,restarting')
 				fs.writeFileSync(process.cwd()+'\\launcher\\restart.js',"var filechange='"+path+"';");
 			}
-		});		
+		});	
+		this.watched=true;
 	}
 
 	this.stat=fs.fstatSync(handle);
