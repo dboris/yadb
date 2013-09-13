@@ -114,8 +114,13 @@ var Create=function(path,opts) {
 	this.readStringArray=readStringArray;
 	this.signature_size=signature_size;
 	this.free=free;
-	handle=fs.openSync(path,'r');
+	//handle=fs.openSync(path,'r');
 	//console.log('watching '+path);
+	if (fs.existsSync(path))
+		handle=fs.openSync(path,'r');
+	else //this is a dirty hack
+		handle=fs.openSync('../'+path,'r');	
+	
 
 	this.stat=fs.fstatSync(handle);
 	this.size=this.stat.size;
