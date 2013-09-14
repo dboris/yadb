@@ -19,6 +19,7 @@ var open=function(dbname,opts) {
 	var cwd=process.cwd();
 	dbname=dbname.replace(':','/');
 	var working=cwd.substring(1+cwd.replace(/\\/g,'/').lastIndexOf('/'));
+	if (DB[working+'/'+dbname+'.ydb']) return DB[working+'/'+dbname+'.ydb'];	
 	if (dbname.indexOf('/')==-1) { //if not folder is specified, check working first
 		if ( fs.existsSync(dbname+'.ydb') ) {
 			dbname=working+'/'+dbname;
@@ -40,6 +41,7 @@ var open=function(dbname,opts) {
 			}
 		}
 	}
+	if (DB[dbname]) return DB[dbname];	
 	if (!fs.existsSync(dbname)) {
 		if (ydbfiles.indexOf(dbname) ==-1 ) {
 			throw 'db not found';
@@ -47,7 +49,7 @@ var open=function(dbname,opts) {
 		}		
 	}
 
-	if (DB[dbname]) return DB[dbname];
+
 	var oldpath=process.cwd();
 	//node_webkit working folder is same as index.html
 	if (process.versions['node-webkit']) process.chdir('..');
