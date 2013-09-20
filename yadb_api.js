@@ -95,6 +95,8 @@ var listydb=function(path, ext) {
 	var output=[];
 	
 	path=path||".";
+	if (!fs.existsSync(path)) return output;
+
 	var oldpath=process.cwd();
 	if (path!=".") process.chdir(path);
 	var currentpath=process.cwd();
@@ -166,7 +168,7 @@ var installservice=function(services) { // so that it is possible to call other 
 
 	if (!initialized && services) {
 		services['yadb']=API;
-		ydbfiles=listydb('..','ydb'); //search app folder first
+		ydbfiles=listydb('..','ydb'); //search app folder first	
 		ydbfiles=ydbfiles.concat( listydb('../ydb','ydb') ); // default folder
 		console.info("yadb installed, found ydb",ydbfiles);
 		initialized=true;
