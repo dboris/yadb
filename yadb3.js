@@ -201,7 +201,7 @@ var Create=function(path,opts) {
 			if (r===undefined) return undefined;
 			if (parseInt(i)) pathnow+="\0";
 			pathnow+=path[i];
-			if (r[0]=="\0") { //offset of data to be loaded
+			if (typeof r=='string' && r[0]=="\0") { //offset of data to be loaded
 				var keys=[];
 				var p=r.substring(1).split("\0").map(
 					function(item){return parseInt(item,16)});
