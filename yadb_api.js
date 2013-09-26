@@ -44,8 +44,8 @@ var open=function(dbname,opts) {
 	if (DB[dbname]) return DB[dbname];	
 	if (!fs.existsSync(dbname)) {
 		if (ydbfiles.indexOf(dbname) ==-1 ) {
-			throw 'db not found';
-			return;
+			//throw 'db not found';
+			return null;
 		}		
 	}
 
@@ -67,7 +67,10 @@ var open=function(dbname,opts) {
 			}
 		});		
 	}
-	if (db) DB[dbname]=db;
+	if (db) {
+		DB[dbname]=db;
+		db.filename=dbname; //physical filename
+	}
 	process.chdir(oldpath)
 	return db;
 }
