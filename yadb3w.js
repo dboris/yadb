@@ -216,7 +216,7 @@ var Create=function(path,opts) {
 		integerEncoding(opts.integerEncoding);
 		
 		if (typeof J=="null" || typeof J=="undefined") {
-			throw 'cannot save null value of '+key;
+			throw 'cannot save null value of '+key+' folders'+JSON.stringify(folders);
 			return;
 		}
 		var type=J.constructor.name;

@@ -189,6 +189,13 @@ var Create=function(path,opts) {
 		return output;
 		
 	}
+	var exists=function(path) {
+		if (path.length==0) return true;
+		var key=path.pop();
+		get(path);
+		if (!path.join('\0')) return (!!KEYS[key]);
+		return (KEYS[path.join('\0')].indexOf(key)>-1);
+	}
 	var get=function(path,recursive) {
 		recursive=recursive||false;
 		if (!CACHE) reset();	
@@ -239,6 +246,7 @@ var Create=function(path,opts) {
 	this.keys=getkeys;
 	this.get=get;   // get a field, load if needed
 	this.getJSON=get; //compatible with yadb2
+	this.exists=exists;
 	this.size=yfs.size;
 	return this;
 }
