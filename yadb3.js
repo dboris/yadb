@@ -194,7 +194,10 @@ var Create=function(path,opts) {
 		var key=path.pop();
 		get(path);
 		if (!path.join('\0')) return (!!KEYS[key]);
-		return (KEYS[path.join('\0')].indexOf(key)>-1);
+		var keys=KEYS[path.join('\0')];
+		path.push(key);//put it back
+		if (keys) return (keys.indexOf(key)>-1);
+		else return false;
 	}
 	var get=function(path,recursive) {
 		recursive=recursive||false;
