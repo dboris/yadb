@@ -82,14 +82,28 @@ var closeAll=function() {
 		DB[i]=null;
 	}
 }
-var enumydb=function() {
+var uniquename=function(db) {
+    var matchcount=0;
+    var name=db.split('/')[1];
+    for (var i=0;i<ydbfiles.length;i++) {
+        if (ydbfiles[i].indexOf('/'+name)>-1) matchcount++;
+    }
+    if (matchcount==1) return name.replace('.ydb','');
+    else return db.replace('.ydb','');
+};
+
+var enumydb=function(opts) {
 	var output={};
 	var dbnames=[];
 	for (var i in ydbfiles) {
 		var fullname=ydbfiles[i];
 		fullname=fullname.replace('/',':').replace('.ydb','');
 		var dbname=fullname.match(/.*:(.*)/)[1]
-		output [ fullname] ='\0'; //pretend to be loaded
+		output [fullname] ={}; //pretend to be loaded
+		output[fullname].name=uniquename(ydbfiles[i]);
+		if (opts.loadmeta) {
+			output[fullname].meta=getRaw([fullname,'meta','*']);
+		}
 	}
 	return output;
 }
@@ -136,7 +150,7 @@ var listydb=function(path, ext) {
 	
 	return output;
 }
-var getRaw=function(path) {
+var getRaw=function(path,opts) {
 	var fetch=function(P) {
 		var recursive=false;
 		if (P[P.length-1]=='*') {
@@ -151,7 +165,7 @@ var getRaw=function(path) {
 	var p=JSON.parse(JSON.stringify(path));
 	var res=[];
 	if (!p || p.length==0) {
-		res=enumydb();
+		res=enumydb(opts);
 	} else if (p) {
 		if (typeof p[0]=="object") {
 			for (var i in p) res.push( fetch(p[i]));
