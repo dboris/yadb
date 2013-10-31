@@ -105,7 +105,7 @@ var enumydb=function(opts) {
 		var dbname=fullname.match(/.*:(.*)/)[1]
 		output [fullname] ={}; //pretend to be loaded
 		output[fullname].name=uniquename(ydbfiles[i]);
-		if (opts.loadmeta) {
+		if (opts && opts.loadmeta) {
 			output[fullname].meta=getRaw([fullname,'meta','*']);
 		}
 	}
