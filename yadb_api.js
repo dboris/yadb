@@ -54,7 +54,7 @@ var open=function(dbname,opts) {
 	//node_webkit working folder is same as index.html
 	if (process.versions['node-webkit']) process.chdir('..');
 	var db=new Yadb(dbname);
-	if (!opts.nowatch) {
+	if (!opts.nowatch || true) {//remove watch feature, process doesn't terminate when watching a file
 		console.log('watching ',dbname);
 		fs.watchFile(dbname,function(curr,prev){
 
@@ -77,6 +77,10 @@ var open=function(dbname,opts) {
 var closeAll=function() {
 	for (var i in DB) {
 		console.log('unwatch and free '+i);
+		if (!DB[i]) {
+			console.log('already freed '+i);
+			continue;
+		}
 		if (DB[i].watched) fs.unwatch(i);
 		DB[i].free();
 		DB[i]=null;
