@@ -54,7 +54,7 @@ var open=function(dbname,opts) {
 	//node_webkit working folder is same as index.html
 	if (process.versions['node-webkit']) process.chdir('..');
 	var db=new Yadb(dbname);
-	if (!opts.nowatch || true) {//remove watch feature, process doesn't terminate when watching a file
+	if (false && !opts.nowatch) {//remove watch feature, process doesn't terminate when watching a file
 		console.log('watching ',dbname);
 		fs.watchFile(dbname,function(curr,prev){
 
