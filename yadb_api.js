@@ -41,18 +41,21 @@ var open=function(dbname,opts) {
 			}
 		}
 	}
+	var completefilename=false;
 	if (DB[dbname]) return DB[dbname];	
 	if (!fs.existsSync(dbname)) {
 		if (ydbfiles.indexOf(dbname) ==-1 ) {
 			//throw 'db not found';
 			return null;
 		}		
+	} else {
+		completefilename=true;
 	}
 
 
 	var oldpath=process.cwd();
 	//node_webkit working folder is same as index.html
-	if (process.versions['node-webkit']) process.chdir('..');
+	if (!completefilename &&process.versions['node-webkit']) process.chdir('..');
 	var db=new Yadb(dbname);
 	if (false && !opts.nowatch) {//remove watch feature, process doesn't terminate when watching a file
 		console.log('watching ',dbname);
