@@ -100,12 +100,17 @@ var uniquename=function(db) {
 };
 
 var enumydb=function(opts) {
+	opts=opts||{};
 	var output={};
 	var dbnames=[];
+	var appfolder=getAppFolder(process.cwd());
 	for (var i in ydbfiles) {
 		var fullname=ydbfiles[i];
 		fullname=fullname.replace('/',':').replace('.ydb','');
-		var dbname=fullname.match(/.*:(.*)/)[1]
+		var dbname=fullname.match(/.*:(.*)/)[1];
+		var folder=fullname.match(/(.*):.*/)[1];
+
+		if (opts.local && folder!=appfolder) continue;
 		output [fullname] ={}; //pretend to be loaded
 		output[fullname].name=uniquename(ydbfiles[i]);
 		if (opts && opts.loadmeta) {
@@ -113,6 +118,10 @@ var enumydb=function(opts) {
 		}
 	}
 	return output;
+}
+var getAppFolder=function(path) {
+	var i=path.lastIndexOf(require('path').sep);
+	return path.substring(i+1);
 }
 var listydb=function(path, ext) {
 	ext=ext||".ydb";
@@ -122,6 +131,8 @@ var listydb=function(path, ext) {
 	if (!fs.existsSync(path)) return output;
 
 	var oldpath=process.cwd();
+	var appfolder=getAppFolder(oldpath);
+
 	if (path!=".") process.chdir(path);
 	var currentpath=process.cwd();
 	var folders=fs.readdirSync(currentpath);
@@ -146,6 +157,8 @@ var listydb=function(path, ext) {
 			if(folders[i].substring(folders[i].length-ext.length)===ext) {
 				if (path=='..') {
 					output.push('./'+folders[i]);
+				}else if (path=='.') {
+					output.push(appfolder+'/'+folders[i]);
 				} else {
 					output.push('ydb/'+folders[i]);	
 				}
@@ -157,6 +170,8 @@ var listydb=function(path, ext) {
 	
 	return output;
 }
+
+
 var getRaw=function(path,opts) {
 	var fetch=function(P) {
 		var recursive=false;
