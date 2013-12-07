@@ -57,6 +57,7 @@ var open=function(dbname,opts) {
 	//node_webkit working folder is same as index.html
 	if (!completefilename &&process.versions['node-webkit']) process.chdir('..');
 	var db=new Yadb(dbname);
+	var folder=dbname.match(/(.*)[:,\/]/)[1];
 	if (false && !opts.nowatch) {//remove watch feature, process doesn't terminate when watching a file
 		console.log('watching ',dbname);
 		fs.watchFile(dbname,function(curr,prev){
@@ -72,6 +73,7 @@ var open=function(dbname,opts) {
 	}
 	if (db) {
 		DB[dbname]=db;
+		db.folder=folder;//physical foldername
 		db.filename=dbname; //physical filename
 	}
 	process.chdir(oldpath)
@@ -103,14 +105,14 @@ var enumydb=function(opts) {
 	opts=opts||{};
 	var output={};
 	var dbnames=[];
-	var appfolder=getAppFolder(process.cwd());
+	
 	for (var i in ydbfiles) {
 		var fullname=ydbfiles[i];
 		fullname=fullname.replace('/',':').replace('.ydb','');
 		var dbname=fullname.match(/.*:(.*)/)[1];
 		var folder=fullname.match(/(.*):.*/)[1];
 
-		if (opts.local && folder!=appfolder) continue;
+		if (opts.folder && folder!=opts.folder) continue;
 		output [fullname] ={}; //pretend to be loaded
 		output[fullname].name=uniquename(ydbfiles[i]);
 		if (opts && opts.loadmeta) {
