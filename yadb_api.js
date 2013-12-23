@@ -12,12 +12,12 @@ var known=function(id) {
 	}
 };
 /* try working folder first, than other folders, finally ydb folder*/
-var open=function(dbname,opts) {
+var open=function(dbn,opts) {
 	opts=opts||{};
 	var dbid="";
 	/* TODO , ydb in the index.html folder has top priority */
 	var cwd=process.cwd();
-	dbname=dbname.replace(':','/');
+	var dbname=dbn.replace(/:/g,'/');
 	var working=cwd.substring(1+cwd.replace(/\\/g,'/').lastIndexOf('/'));
 	if (DB[working+'/'+dbname+'.ydb']) return DB[working+'/'+dbname+'.ydb'];	
 	if (dbname.indexOf('/')==-1) { //if not folder is specified, check working first
