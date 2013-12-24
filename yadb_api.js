@@ -198,6 +198,12 @@ var getRaw=function(path,opts) {
 	return res;
 }
 var initialized=false;
+var hasParentFolder=function() {
+	var path=process.cwd();
+	path=path.replace(/\\/g,'/');
+	var count=path.match(/\//g).length;
+	return (count>=2) ;
+}
 var installservice=function(services) { // so that it is possible to call other services
 	var API={ 
 		listydb:listydb,
@@ -209,8 +215,8 @@ var installservice=function(services) { // so that it is possible to call other 
 
 	if (!initialized && services) {
 		services['yadb']=API;
-		ydbfiles=listydb('..','ydb'); //search app folder first	
-		ydbfiles=ydbfiles.concat( listydb('../ydb','ydb') ); // default folder
+		if (hasParentFolder()) ydbfiles=listydb(".."); //search other folder
+		else ydbfiles=listydb(); //deploy version, no other app folder
 		console.info("yadb installed, found ydb",ydbfiles);
 		initialized=true;
 	}
