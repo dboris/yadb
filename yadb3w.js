@@ -1,4 +1,4 @@
-﻿/*
+/*
 	YADB version 3.0 GPL
 	2013/2/14
 	yapcheahshen@gmail.com

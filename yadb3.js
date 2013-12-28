@@ -1,10 +1,11 @@
-﻿/*
+/*
 	YADB version 3.0 GPL
 	yapcheahshen@gmail.com
 	2013/2/14
 */
 
-var Yfs=require('./yadb3_fs');
+var Yfs=require('./yadb3_fs');	
+
 
 var DT={
 	uint8:'1', //unsigned 1 byte integer
@@ -200,6 +201,7 @@ var Create=function(path,opts) {
 		else return false;
 	}
 	var get=function(path,recursive) {
+		if (typeof path=='undefined') path=[];
 		recursive=recursive||false;
 		if (!CACHE) reset();	
 		var o=CACHE;
@@ -249,11 +251,10 @@ var Create=function(path,opts) {
 	this.keys=getkeys;
 	this.get=get;   // get a field, load if needed
 	this.getJSON=get; //compatible with yadb2
-	this.exists=exists;
+	this.exists=exists;	
 	this.size=yfs.size;
 	return this;
 }
-
 Create.datatypes=DT;
 if (module) module.exports=Create;
 //return Create;

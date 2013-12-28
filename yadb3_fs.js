@@ -1,4 +1,4 @@
-﻿/* OS dependent file operation */
+/* OS dependent file operation */
 
 var fs=require('fs');
 var signature_size=1;

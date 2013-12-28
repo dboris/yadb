@@ -1,4 +1,4 @@
-﻿/* yadb pool */
+/* yadb pool */
 var fs=require('fs');
 var Yadb=require('./yadb3');
 var DB={};

@@ -1,4 +1,4 @@
-﻿/* OS dependent file operation 
+/* OS dependent file operation 
    super fast fs for small ydb 
    fill in a big buffer,
    and write to disk when free()

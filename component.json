@@ -1,0 +1,17 @@
+{
+  "name": "yadb",
+  "repo": "yapcheahshen/yadb",
+  "description": "test",
+  "version": "0.0.1",
+  "keywords": [],
+  "dependencies": {
+
+  },
+  "development": {},
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": [
+    "index.js","yadb_api.js","yadb3.js","yadb3_fs_html5.js"
+  ],
+  "remotes": []
+}

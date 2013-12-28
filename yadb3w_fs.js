@@ -1,4 +1,4 @@
-﻿/* OS dependent file operation */
+/* OS dependent file operation */
 
 var fs=require('fs');
 var DT=require('./yadb3').datatypes;
