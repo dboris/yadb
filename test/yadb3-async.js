@@ -88,7 +88,7 @@ QUnit.asyncTest('ucs2 string array',function(){
 		});	
 	});
 });
-*/
+
 QUnit.asyncTest('array of array of i8',function(){
   var t=new Yadb3('arr_arr_i8.ydb',{},function(topic) {
 		topic.load({},function(out){
@@ -99,59 +99,67 @@ QUnit.asyncTest('array of array of i8',function(){
 	});
 });
 
-/*
-QUnit.test('array of array of i8',function(){
-		var topic=new Yadb3('arr_arr_i8.ydb');
-		var out=topic.load();
-		deepEqual(out,[[1,2,3],[4,5,6,7],[8,9]],'i8 array array'+JSON.stringify(out));
-		topic.free();
+QUnit.asyncTest('array of array of i8',function(){
+  var t=new Yadb3('arr_var.ydb',{},function(topic) {
+		topic.load({},function(out){
+		  deepEqual(out,[16843009,170,'xyz',[1,2,3]],'var array array'+JSON.stringify(out));
+			topic.free();
+			start();
+		});	
+	});
 });
-QUnit.test('var array',function(){
-		var topic=new Yadb3('arr_var.ydb');
-		var out=topic.load();
-		deepEqual(out,[16843009,170,'xyz',[1,2,3]],'var array array'+JSON.stringify(out));
-		topic.free();
-});
-QUnit.test('object',function(){
-		var topic=new Yadb3('obj.ydb');
-		var out=topic.load();
-		//deepEqual doesn't work ?!
-		equal(JSON.stringify(out),
+*/
+QUnit.asyncTest('object',function(){
+  var t=new Yadb3('obj.ydb',{},function(topic) {
+		topic.load({},function(out){
+			equal(JSON.stringify(out),
 				JSON.stringify({a:1,b:2,c:3}),
 				'simple object'+JSON.stringify(out));	
-		topic.free();
+			topic.free();
+			start();
+		});	
+	});
 });
-QUnit.test('object',function(){
-		var topic=new Yadb3('obj.ydb');
-		var out=topic.load({lazy:true});
+
+QUnit.asyncTest('object lazy',function(){
+  var t=new Yadb3('obj.ydb',{},function(topic) {
+		topic.load({lazy:true},function(out){
+			console.log(out)
 		deepEqual(Object.keys(out),
 				['a','b','c'],
 				'simple lazy object'+JSON.stringify(out));
-		topic.free();
-});
-QUnit.test('object var',function(){
-		var topic=new Yadb3('obj_arr.ydb');
-		var out=topic.load();
-		equal(JSON.stringify(out),
-				JSON.stringify({a:[1,2,3],b:[4,5,6],c:[7,8,9]}),
-				'simple lazy object'+JSON.stringify(out));
-		topic.free();
-});
-QUnit.test('load json',function(){
-		var topic=new Yadb3('json.ydb');
-		var out=topic.load();
-		console.log(out)
-		equal(out.b,"qqq")
-		topic.free();
+			topic.free();
+			start();
+		});	
+	});
 });
 
-QUnit.test('load json',function(){
-		var topic=new Yadb3('json.ydb');
-		var out=topic.load();
-		console.log(out)
-		equal(out.d.x,"a10")
-		topic.free();
+QUnit.asyncTest('object var',function(){
+  var t=new Yadb3('obj_arr.ydb',{},function(topic) {
+		topic.load({},function(out){
+	
+		  equal(JSON.stringify(out),
+				JSON.stringify({a:[1,2,3],b:[4,5,6],c:[7,8,9]}),
+				'simple lazy object'+JSON.stringify(out));
+			topic.free();
+			start();
+		});	
+	});
 });
+QUnit.asyncTest('load json',function(){
+  var t=new Yadb3('json.ydb',{},function(topic) {
+		topic.load({},function(out){
+	
+		  console.log(out)
+		  equal(out.b,"qqq")
+		  equal(out.d.x,"a10")
+			topic.free();
+			start();
+		});	
+	});
+});
+/*
+
 
 QUnit.test('lazy get',function(){
 		var topic=new Yadb3('json.ydb');

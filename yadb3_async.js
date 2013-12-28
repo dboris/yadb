@@ -2,13 +2,14 @@
 	YADB version 3.0 GPL
 	yapcheahshen@gmail.com
 	2013/12/28
-	asyncronize version of yadb
+	asyncronize version of yadb, for HTML5 FileAPI
 */
-
-
 var Yfs=require('./yadb3_fs_async');	
 var Q=require('q');
-
+/*
+remove dependency of Q
+http://stackoverflow.com/questions/4234619/how-to-avoid-long-nesting-of-asynchronous-functions-in-node-js
+*/
 var DT={
 	uint8:'1', //unsigned 1 byte integer
 	int32:'4', // signed 4 bytes integer
@@ -82,37 +83,34 @@ var Create=function(path,opts,createcb) {
 		return deferred.promise;
 	}
 
-
-
 	var loadArray = function(opts,blocksize,cb) {
 		var that=this;
 		getArrayLength.apply(this,[opts]).
-		then(function(data){
+		then(function(L){
 				var o=[];
 				var endcur=opts.cur;
-				opts.cur=data.offset;
+				opts.cur=L.offset;
 
 				if (opts.lazy) { 
-						var offset=data.offset;
-						data.sz.map(function(sz){
+						var offset=L.offset;
+						L.sz.map(function(sz){
 							o.push("\0"+offset.toString(16)
 								   +"\0"+sz.toString(16));
 							offset+=sz;
 						})
 				} else {
-					opts.blocksize=data.sz[0];
-					var result = Qload.apply(that,[opts,o]);
-					for (var i=1;i<data.count;i++) {
+					opts.blocksize=L.sz[0];
+					var result = QAload.apply(that,[opts,o]);
+					for (var i=1;i<L.count;i++) {
 							result= result.then( (function(sz){
 								return (
 									function(opt){
 										console.log('sz',sz)
 										opt.blocksize=sz;
-										return Qload.apply(that,[opt ,o])	;				
+										return QAload.apply(that,[opt ,o])	;				
 									}
 								);
-
-							})(data.sz[i]));
+							})(L.sz[i]));
 					}
 				}
 
@@ -126,79 +124,64 @@ var Create=function(path,opts,createcb) {
 				}
 			}
 		)
-
-
-		/*
-		var lengthoffset=this.fs.readUI8(this.cur)*4294967296;
-		//lengthoffset+=this.fs.readUI32(cur+1);
-		//this.cur+=5;
-		var dataoffset=this.cur;
-		this.cur+=lengthoffset;
-
-
-		var count=loadVInt1();
-		var sz=loadVInt(count*6,count);
-		var o=[];
-		var endcur=this.cur;
-		this.cur=dataoffset; 
-		
-		for (var i=0;i<count;i++) {
-			if (lazy) { 
-				//store the offset instead of loading from disk
-				var offset=dataoffset;
-				for (var i=0;i<sz.length;i++) {
-				//prefix with a \0, impossible for normal string
-					o.push("\0"+offset.toString(16)
-						   +"\0"+sz[i].toString(16));
-					offset+=sz[i];
-				}
-			} else {			
-				o.push(load({blocksize:sz[i]}));
-			}
-		}
-		this.cur=endcur;
-		return o;
-		*/
 	}		
 	// item can be any type (variable length)
 	// support lazy load
 	// structure:
 	// signature,5 bytes offset, payload, itemlengths, 
 	//                    stringarray_signature, keys
-	var loadObject = function(blocksize) {
-		var start=this.cur;
-		var lengthoffset=this.fs.readUI8(this.cur)*4294967296;
-		lengthoffset+=this.fs.readUI32(this.cur+1);this.cur+=5;
-		var dataoffset=this.cur;
-		this.cur+=lengthoffset;
-		var count=loadVInt1();
-		var keys=opts.keys;
+	var loadObject = function(opts,blocksize,cb) {
+		var that=this;
+		var start=opts.cur;
+		getArrayLength.apply(this,[opts]).
+		then(function(L){
+			//console.log(L)
+			opts.blocksize=blocksize-opts.cur+start;
+			load.apply(that,[opts,function(keys){ //load the keys
+				var o={};
+				var endcur=opts.cur;
+				opts.cur=L.offset;
 
-		var lengths=loadVInt(count*6,count);
-		var keyssize=blocksize-this.cur+start;	
-		var K=load({blocksize:keyssize});
-		var o={};
-		var endcur=this.cur;
-		
-		if (opts.lazy) { 
-			//store the offset instead of loading from disk
-			var offset=dataoffset;
-			for (var i=0;i<lengths.length;i++) {
-				//prefix with a \0, impossible for normal string
-				o[K[i]]="\0"+offset.toString(16)
-					   +"\0"+lengths[i].toString(16);
-				offset+=lengths[i];
-			}
-		} else {
-			this.cur=dataoffset; 
-			for (var i=0;i<count;i++) {
-				o[K[i]]=(load({blocksize:lengths[i]}));
-			}
-		}
-		if (keys) K.map(function(r) { keys.push(r)});
-		this.cur=endcur;
-		return o;
-	}		
+				if (opts.lazy) { 
+					var offset=L.offset;
+					for (var i=0;i<L.sz.length;i++) {
+						//prefix with a \0, impossible for normal string
+						o[keys[i]]="\0"+offset.toString(16)
+							   +"\0"+L.sz[i].toString(16);
+						offset+=L.sz[i];
+					}
+				} else {
+
+					opts.blocksize=L.sz[0];
+					var result = QOload.apply(that,[opts,o,keys[0]]);
+
+					for (var i=1;i<L.count;i++) {
+							result= result.then( (function(sz,key){
+								return (
+									function(opt){
+										opt.blocksize=sz;
+										return QOload.apply(that,[opt ,o , key]);
+									}
+								);
+							})(L.sz[i], keys[i]));
+					}
+				}
+
+				opts.cur=endcur;
+
+				if (opts.lazy) cb(o);
+				else {
+					result.then(function(){
+						cb(o);
+					})
+				}
+
+
+			}]);
+
+		});
+	}
+
 	//item is same known type
 	var loadStringArray=function(opts,blocksize,encoding,cb) {
 		var that=this;
@@ -235,13 +218,13 @@ var Create=function(path,opts,createcb) {
 				this.fs.readUI8(opts.cur-1,cb);
 			} else if (signature===DT.utf8) {
 				var c=opts.cur;opts.cur+=datasize;
-				opts.fs.readString(c,datasize,'utf8',cb);	
+				this.fs.readString(c,datasize,'utf8',cb);	
 			} else if (signature===DT.ucs2) {
 				var c=opts.cur;opts.cur+=datasize;
-				opts.fs.readString(c,datasize,'ucs2',cb);	
+				this.fs.readString(c,datasize,'ucs2',cb);	
 			} else if (signature===DT.bool) {
 				opts.cur++;
-				opts.fs.readUI8(opts.cur-1,function(data){cb(!!data)});
+				this.fs.readUI8(opts.cur-1,function(data){cb(!!data)});
 			} else if (signature===DT.blob) {
 				loadBlob(datasize,cb);
 			}
@@ -277,18 +260,31 @@ var Create=function(path,opts,createcb) {
 				//throw 'unsupported type '+signature;
 			}
 	}
-
-	var Qload=function(opts,outputarray) {
+	//promise load into array
+	var QAload=function(opts,outputarray) {
 		var deferred=Q.defer();
 
 		opts=JSON.parse(JSON.stringify(opts));
 		load.apply(this,[opts,function(data){
 			outputarray.push(data);
-			console.log('qload data',data)
+			//console.log('qload data',data)
 			deferred.resolve(opts);
 		}]);
 		return deferred.promise;
 	}
+	//promise load into object
+	var QOload=function(opts,outputobject,key) {
+		var deferred=Q.defer();
+
+		opts=JSON.parse(JSON.stringify(opts));
+		load.apply(this,[opts,function(data){
+			outputobject[key]=data;
+			console.log('qoload data',data)
+			deferred.resolve(opts);
+		}]);
+		return deferred.promise;
+	}
+
 	var load=function(opts,cb) {
 		opts=opts||{}; // this will served as context for entire load procedure
 		opts.cur=opts.cur||0;
