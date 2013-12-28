@@ -6,6 +6,7 @@ var Yadb3=require('../yadb3_async'),
 	Yadb3_fs=require('../yadb3_fs_async');
 
 console.log('yadb3 test suite');
+/*
 QUnit.asyncTest('read int32',function(){
     var topic=new Yadb3_fs('i32.ydb',{},function(topic){
 			  topic.readUI32(topic.signature_size,function(out){
@@ -47,7 +48,7 @@ QUnit.asyncTest('read ucs2',function(){
 
 QUnit.asyncTest('read pint',function(){
   var t=new Yadb3('pint.ydb',{},function(topic) {
-  	console.log(topic.load);
+
 		topic.load({},function(out){
 			deepEqual(out,[128,129],'pint'+out);
 			topic.free();
@@ -59,7 +60,6 @@ QUnit.asyncTest('read pint',function(){
 
 QUnit.asyncTest('read vint',function(){
   var t=new Yadb3('vint.ydb',{},function(topic) {
-  	console.log(topic.load);
 		topic.load({},function(out){
 			deepEqual(out,[128,1],'vint'+out);
 			topic.free();
@@ -88,7 +88,7 @@ QUnit.asyncTest('ucs2 string array',function(){
 		});	
 	});
 });
-
+*/
 QUnit.asyncTest('array of array of i8',function(){
   var t=new Yadb3('arr_arr_i8.ydb',{},function(topic) {
 		topic.load({},function(out){
@@ -98,8 +98,8 @@ QUnit.asyncTest('array of array of i8',function(){
 		});	
 	});
 });
-/*
 
+/*
 QUnit.test('array of array of i8',function(){
 		var topic=new Yadb3('arr_arr_i8.ydb');
 		var out=topic.load();

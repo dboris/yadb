@@ -95,7 +95,7 @@ var Create=function(path,opts,cb) {
 		var that=this;
 		
 		if (unitsize* count>this.size && this.size)  {
-			throw "array size exceed file size"
+			console.log("array size exceed file size",this.size)
 			return;
 		}
 		

@@ -7,7 +7,7 @@
 
 
 var Yfs=require('./yadb3_fs_async');	
-
+var Q=require('q');
 
 var DT={
 	uint8:'1', //unsigned 1 byte integer
@@ -33,24 +33,24 @@ var Create=function(path,opts,createcb) {
 	/* loadxxx functions move file pointer */
 	// load variable length int
 	
-	var loadVInt =function(blocksize,count,cb) {
+	var loadVInt =function(opts,blocksize,count,cb) {
 		//if (count==0) return [];
-		this.fs.readBuf_packedint(this.cur,blocksize,count,true,function(o){
-			that.cur+=o.adv;
+		this.fs.readBuf_packedint(opts.cur,blocksize,count,true,function(o){
+			opts.cur+=o.adv;
 			cb.apply(that,[o.data]);
 		});
 	}
-	var loadVInt1=function(cb) {
+	var loadVInt1=function(opts,cb) {
 		var that=this;
-		loadVInt(6,1,function(data){
+		loadVInt.apply(this,[opts,6,1,function(data){
 			cb.apply(that,[data[0]]);
-		})
+		}])
 	}
 	//for postings
-	var loadPInt =function(blocksize,count,cb) {
+	var loadPInt =function(opts,blocksize,count,cb) {
 		var that=this;
-		this.fs.readBuf_packedint(this.cur,blocksize,count,false,function(o){
-			that.cur+=o.adv;
+		this.fs.readBuf_packedint(opts.cur,blocksize,count,false,function(o){
+			opts.cur+=o.adv;
 			cb.apply(that,[o.data]);
 		});
 	}
@@ -58,17 +58,90 @@ var Create=function(path,opts,createcb) {
 	// maximum size of array is 1TB 2^40
 	// structure:
 	// signature,5 bytes offset, payload, itemlengths
-	var loadArray = function(blocksize,lazy) {
+	var getArrayLength=function(opts) {
+		var that=this;
+		var dataoffset=0;
+		var deferred=Q.defer();
+		this.fs.readUI8(opts.cur,function(len){
+			var lengthoffset=len*4294967296;
+			opts.cur++;
+			that.fs.readUI32(opts.cur,function(len){
+				opts.cur+=4;
+				dataoffset=opts.cur; //keep this
+				lengthoffset+=len;
+				opts.cur+=lengthoffset;
+
+				loadVInt1.apply(that,[opts,function(count){
+					loadVInt.apply(that,[opts,count*6,count,function(sz){						
+						deferred.resolve({count:count,sz:sz,offset:dataoffset});
+					}]);
+				}]);
+				
+			});
+		});
+		return deferred.promise;
+	}
+
+
+
+	var loadArray = function(opts,blocksize,cb) {
+		var that=this;
+		getArrayLength.apply(this,[opts]).
+		then(function(data){
+				var o=[];
+				var endcur=opts.cur;
+				opts.cur=data.offset;
+
+				if (opts.lazy) { 
+						var offset=data.offset;
+						data.sz.map(function(sz){
+							o.push("\0"+offset.toString(16)
+								   +"\0"+sz.toString(16));
+							offset+=sz;
+						})
+				} else {
+					opts.blocksize=data.sz[0];
+					var result = Qload.apply(that,[opts,o]);
+					for (var i=1;i<data.count;i++) {
+							result= result.then( (function(sz){
+								return (
+									function(opt){
+										console.log('sz',sz)
+										opt.blocksize=sz;
+										return Qload.apply(that,[opt ,o])	;				
+									}
+								);
+
+							})(data.sz[i]));
+					}
+				}
+
+				opts.cur=endcur;
+
+				if (opts.lazy) cb(o);
+				else {
+					result.then(function(){
+						cb(o);
+					})
+				}
+			}
+		)
+
+
+		/*
 		var lengthoffset=this.fs.readUI8(this.cur)*4294967296;
-		lengthoffset+=this.fs.readUI32(cur+1);
-		this.cur+=5;
+		//lengthoffset+=this.fs.readUI32(cur+1);
+		//this.cur+=5;
 		var dataoffset=this.cur;
 		this.cur+=lengthoffset;
+
+
 		var count=loadVInt1();
 		var sz=loadVInt(count*6,count);
 		var o=[];
 		var endcur=this.cur;
 		this.cur=dataoffset; 
+		
 		for (var i=0;i<count;i++) {
 			if (lazy) { 
 				//store the offset instead of loading from disk
@@ -85,26 +158,29 @@ var Create=function(path,opts,createcb) {
 		}
 		this.cur=endcur;
 		return o;
+		*/
 	}		
 	// item can be any type (variable length)
 	// support lazy load
 	// structure:
 	// signature,5 bytes offset, payload, itemlengths, 
 	//                    stringarray_signature, keys
-	var loadObject = function(blocksize,lazy, keys) {
+	var loadObject = function(blocksize) {
 		var start=this.cur;
 		var lengthoffset=this.fs.readUI8(this.cur)*4294967296;
 		lengthoffset+=this.fs.readUI32(this.cur+1);this.cur+=5;
 		var dataoffset=this.cur;
 		this.cur+=lengthoffset;
 		var count=loadVInt1();
+		var keys=opts.keys;
+
 		var lengths=loadVInt(count*6,count);
 		var keyssize=blocksize-this.cur+start;	
 		var K=load({blocksize:keyssize});
 		var o={};
 		var endcur=this.cur;
 		
-		if (lazy) { 
+		if (opts.lazy) { 
 			//store the offset instead of loading from disk
 			var offset=dataoffset;
 			for (var i=0;i<lengths.length;i++) {
@@ -124,21 +200,21 @@ var Create=function(path,opts,createcb) {
 		return o;
 	}		
 	//item is same known type
-	var loadStringArray=function(blocksize,encoding,cb) {
+	var loadStringArray=function(opts,blocksize,encoding,cb) {
 		var that=this;
-		this.fs.readStringArray(this.cur,blocksize,encoding,function(o){
-			that.cur+=blocksize;
+		this.fs.readStringArray(opts.cur,blocksize,encoding,function(o){
+			opts.cur+=blocksize;
 			cb.apply(that,[o]);
 		});
 	}
-	var loadIntegerArray=function(blocksize,unitsize,cb) {
+	var loadIntegerArray=function(opts,blocksize,unitsize,cb) {
 		var that=this;
-		loadVInt1(function(count){
-			var o=that.fs.readFixedArray(that.cur,count,unitsize,function(o){
-				that.cur+=count*unitsize;
+		loadVInt1.apply(this,[opts,function(count){
+			var o=that.fs.readFixedArray(opts.cur,count,unitsize,function(o){
+				opts.cur+=count*unitsize;
 				cb.apply(that,[o]);
 			});
-		});
+		}]);
 
 	}
 	var loadBlob=function(blocksize,cb) {
@@ -148,60 +224,76 @@ var Create=function(path,opts,createcb) {
 	}	
 	var loadbysignature=function(opts,signature,cb) {
 		  var blocksize=opts.blocksize||this.fs.size; 
-			this.cur+=this.fs.signature_size;
+			opts.cur+=this.fs.signature_size;
 			var datasize=blocksize-that.fs.signature_size;
 			//basic types
 			if (signature===DT.int32) {
-				this.cur+=4;
-				this.fs.readI32(this.cur-4,cb);
+				opts.cur+=4;
+				this.fs.readI32(opts.cur-4,cb);
 			} else if (signature===DT.uint8) {
-				this.cur++;
-				this.fs.readUI8(this.cur-1,cb);
+				opts.cur++;
+				this.fs.readUI8(opts.cur-1,cb);
 			} else if (signature===DT.utf8) {
-				var c=this.cur;this.cur+=datasize;
-				this.fs.readString(c,datasize,'utf8',cb);	
+				var c=opts.cur;opts.cur+=datasize;
+				opts.fs.readString(c,datasize,'utf8',cb);	
 			} else if (signature===DT.ucs2) {
-				var c=this.cur;this.cur+=datasize;
-				this.fs.readString(c,datasize,'ucs2',cb);	
+				var c=opts.cur;opts.cur+=datasize;
+				opts.fs.readString(c,datasize,'ucs2',cb);	
 			} else if (signature===DT.bool) {
-				this.cur++;
-				this.fs.readUI8(this.cur-1,function(data){cb(!!data)});
+				opts.cur++;
+				opts.fs.readUI8(opts.cur-1,function(data){cb(!!data)});
 			} else if (signature===DT.blob) {
 				loadBlob(datasize,cb);
 			}
 			//variable length integers
 			else if (signature===DT.vint) {
-				loadVInt.apply(this,[datasize,null,cb]);
+				loadVInt.apply(this,[opts,datasize,null,cb]);
 			}
 			else if (signature===DT.pint) {
-				loadPInt.apply(this,[datasize,null,cb]);
+				loadPInt.apply(this,[opts,datasize,null,cb]);
 			}
 			//simple array
 			else if (signature===DT.utf8arr) {
-				loadStringArray.apply(this,[datasize,'utf8',cb]);
+				loadStringArray.apply(this,[opts,datasize,'utf8',cb]);
 			}
 			else if (signature===DT.ucs2arr) {
-				loadStringArray.apply(this,[datasize,'ucs2',cb]);
+				loadStringArray.apply(this,[opts,datasize,'ucs2',cb]);
 			}
 			else if (signature===DT.uint8arr) {
-				loadIntegerArray.apply(this,[datasize,1,cb]);
+				loadIntegerArray.apply(this,[opts,datasize,1,cb]);
 			}
 			else if (signature===DT.int32arr) {
-				loadIntegerArray.apply(this,[datasize,4,cb]);
+				loadIntegerArray.apply(this,[opts,datasize,4,cb]);
 			}
 			//nested structure
 			else if (signature===DT.array) {
-				loadArray.apply(this,[datasize,opts.lazy,cb]);
+				loadArray.apply(this,[opts,datasize,cb]);
 			}
 			else if (signature===DT.object) {
-				loadObject.apply(this,[datasize,opts.lazy,opts.keys,cb]);
+				loadObject.apply(this,[opts,datasize,cb]);
 			}
-			else throw 'unsupported type '+signature;
+			else {
+				console.log('unsupported type',signature,opts)
+				//throw 'unsupported type '+signature;
+			}
+	}
+
+	var Qload=function(opts,outputarray) {
+		var deferred=Q.defer();
+
+		opts=JSON.parse(JSON.stringify(opts));
+		load.apply(this,[opts,function(data){
+			outputarray.push(data);
+			console.log('qload data',data)
+			deferred.resolve(opts);
+		}]);
+		return deferred.promise;
 	}
 	var load=function(opts,cb) {
-		opts=opts||{};
+		opts=opts||{}; // this will served as context for entire load procedure
+		opts.cur=opts.cur||0;
 		var that=this;
-		this.fs.readSignature(this.cur, function(signature){
+		this.fs.readSignature(opts.cur, function(signature){
 			loadbysignature.apply(that,[opts,signature,cb])
 		});
 		return this;
@@ -209,8 +301,7 @@ var Create=function(path,opts,createcb) {
 	var CACHE=null;
 	var KEYS={};
 	var reset=function() {
-		this.cur=0;
-		CACHE=load({lazy:true});
+		CACHE=load({cur:0,lazy:true});
 	}
 	var getall=function() {
 		var output={};
@@ -274,7 +365,7 @@ var Create=function(path,opts,createcb) {
 
 	var setupapi=function() {
 		this.load=load;
-		this.cur=0;
+//		this.cur=0;
 		this.cache=function() {return CACHE};
 		this.free=function() {
 			CACHE=null;
