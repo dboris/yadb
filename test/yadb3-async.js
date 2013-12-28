@@ -6,7 +6,7 @@ var Yadb3=require('../yadb3_async'),
 	Yadb3_fs=require('../yadb3_fs_async');
 
 console.log('yadb3 test suite');
-/*
+
 QUnit.asyncTest('read int32',function(){
     var topic=new Yadb3_fs('i32.ydb',{},function(topic){
 			  topic.readUI32(topic.signature_size,function(out){
@@ -99,6 +99,7 @@ QUnit.asyncTest('array of array of i8',function(){
 	});
 });
 
+
 QUnit.asyncTest('array of array of i8',function(){
   var t=new Yadb3('arr_var.ydb',{},function(topic) {
 		topic.load({},function(out){
@@ -108,7 +109,7 @@ QUnit.asyncTest('array of array of i8',function(){
 		});	
 	});
 });
-*/
+
 QUnit.asyncTest('object',function(){
   var t=new Yadb3('obj.ydb',{},function(topic) {
 		topic.load({},function(out){
@@ -124,7 +125,6 @@ QUnit.asyncTest('object',function(){
 QUnit.asyncTest('object lazy',function(){
   var t=new Yadb3('obj.ydb',{},function(topic) {
 		topic.load({lazy:true},function(out){
-			console.log(out)
 		deepEqual(Object.keys(out),
 				['a','b','c'],
 				'simple lazy object'+JSON.stringify(out));
@@ -146,10 +146,12 @@ QUnit.asyncTest('object var',function(){
 		});	
 	});
 });
+
+
 QUnit.asyncTest('load json',function(){
   var t=new Yadb3('json.ydb',{},function(topic) {
+
 		topic.load({},function(out){
-	
 		  console.log(out)
 		  equal(out.b,"qqq")
 		  equal(out.d.x,"a10")
@@ -158,8 +160,9 @@ QUnit.asyncTest('load json',function(){
 		});	
 	});
 });
-/*
 
+
+/*
 
 QUnit.test('lazy get',function(){
 		var topic=new Yadb3('json.ydb');

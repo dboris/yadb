@@ -5,7 +5,7 @@
 	asyncronize version of yadb, for HTML5 FileAPI
 */
 var Yfs=require('./yadb3_fs_async');	
-var Q=require('q');
+
 /*
 remove dependency of Q
 http://stackoverflow.com/questions/4234619/how-to-avoid-long-nesting-of-asynchronous-functions-in-node-js
@@ -59,10 +59,10 @@ var Create=function(path,opts,createcb) {
 	// maximum size of array is 1TB 2^40
 	// structure:
 	// signature,5 bytes offset, payload, itemlengths
-	var getArrayLength=function(opts) {
+	var getArrayLength=function(opts,cb) {
 		var that=this;
 		var dataoffset=0;
-		var deferred=Q.defer();
+
 		this.fs.readUI8(opts.cur,function(len){
 			var lengthoffset=len*4294967296;
 			opts.cur++;
@@ -74,19 +74,17 @@ var Create=function(path,opts,createcb) {
 
 				loadVInt1.apply(that,[opts,function(count){
 					loadVInt.apply(that,[opts,count*6,count,function(sz){						
-						deferred.resolve({count:count,sz:sz,offset:dataoffset});
+						cb({count:count,sz:sz,offset:dataoffset});
 					}]);
 				}]);
 				
 			});
 		});
-		return deferred.promise;
 	}
 
 	var loadArray = function(opts,blocksize,cb) {
 		var that=this;
-		getArrayLength.apply(this,[opts]).
-		then(function(L){
+		getArrayLength.apply(this,[opts,function(L){
 				var o=[];
 				var endcur=opts.cur;
 				opts.cur=L.offset;
@@ -99,31 +97,36 @@ var Create=function(path,opts,createcb) {
 							offset+=sz;
 						})
 				} else {
-					opts.blocksize=L.sz[0];
-					var result = QAload.apply(that,[opts,o]);
-					for (var i=1;i<L.count;i++) {
-							result= result.then( (function(sz){
+					var taskqueue=[];
+					for (var i=0;i<L.count;i++) {
+						taskqueue.push(
+							(function(sz){
 								return (
-									function(opt){
-										console.log('sz',sz)
-										opt.blocksize=sz;
-										return QAload.apply(that,[opt ,o])	;				
+									function(data){
+										if (typeof data=='object' && data.__empty) {
+											 //not pushing the first call
+										}	else o.push(data);
+										opts.blocksize=sz;
+										load.apply(that,[opts, taskqueue.shift()]);
 									}
 								);
-							})(L.sz[i]));
+							})(L.sz[i])
+						);
 					}
+					//last call to child load
+					taskqueue.push(function(data){
+						o.push(data);
+						opts.cur=endcur;
+						cb.apply(that,[o]);
+					});
 				}
 
-				opts.cur=endcur;
-
-				if (opts.lazy) cb(o);
+				if (opts.lazy) cb.apply(that,[o]);
 				else {
-					result.then(function(){
-						cb(o);
-					})
+					taskqueue.shift()({__empty:true});
 				}
 			}
-		)
+		])
 	}		
 	// item can be any type (variable length)
 	// support lazy load
@@ -133,15 +136,12 @@ var Create=function(path,opts,createcb) {
 	var loadObject = function(opts,blocksize,cb) {
 		var that=this;
 		var start=opts.cur;
-		getArrayLength.apply(this,[opts]).
-		then(function(L){
-			//console.log(L)
+		getArrayLength.apply(this,[opts,function(L) {
 			opts.blocksize=blocksize-opts.cur+start;
 			load.apply(that,[opts,function(keys){ //load the keys
 				var o={};
 				var endcur=opts.cur;
 				opts.cur=L.offset;
-
 				if (opts.lazy) { 
 					var offset=L.offset;
 					for (var i=0;i<L.sz.length;i++) {
@@ -152,34 +152,39 @@ var Create=function(path,opts,createcb) {
 					}
 				} else {
 
-					opts.blocksize=L.sz[0];
-					var result = QOload.apply(that,[opts,o,keys[0]]);
-
-					for (var i=1;i<L.count;i++) {
-							result= result.then( (function(sz,key){
+					var taskqueue=[];
+					for (var i=0;i<L.count;i++) {
+						taskqueue.push(
+							(function(sz,key){
 								return (
-									function(opt){
-										opt.blocksize=sz;
-										return QOload.apply(that,[opt ,o , key]);
+									function(data){
+										if (typeof data=='object' && data.__empty) {
+											//not saving the first call;
+										} else {
+											o[key]=data; 
+										}
+										opts.blocksize=sz;
+										load.apply(that,[opts, taskqueue.shift()]);
 									}
 								);
-							})(L.sz[i], keys[i]));
+							})(L.sz[i],keys[i-1])
+
+						);
 					}
+					//last call to child load
+					taskqueue.push(function(data){
+						o[keys[keys.length-1]]=data;
+						opts.cur=endcur;
+						cb.apply(that,[o]);
+					});
 				}
-
-				opts.cur=endcur;
-
 				if (opts.lazy) cb(o);
 				else {
-					result.then(function(){
-						cb(o);
-					})
+					taskqueue.shift()({__empty:true});
 				}
-
-
 			}]);
 
-		});
+		}]);
 	}
 
 	//item is same known type
@@ -256,33 +261,10 @@ var Create=function(path,opts,createcb) {
 				loadObject.apply(this,[opts,datasize,cb]);
 			}
 			else {
-				console.log('unsupported type',signature,opts)
+				console.error('unsupported type',signature,opts)
+				cb(null);//make sure it return
 				//throw 'unsupported type '+signature;
 			}
-	}
-	//promise load into array
-	var QAload=function(opts,outputarray) {
-		var deferred=Q.defer();
-
-		opts=JSON.parse(JSON.stringify(opts));
-		load.apply(this,[opts,function(data){
-			outputarray.push(data);
-			//console.log('qload data',data)
-			deferred.resolve(opts);
-		}]);
-		return deferred.promise;
-	}
-	//promise load into object
-	var QOload=function(opts,outputobject,key) {
-		var deferred=Q.defer();
-
-		opts=JSON.parse(JSON.stringify(opts));
-		load.apply(this,[opts,function(data){
-			outputobject[key]=data;
-			console.log('qoload data',data)
-			deferred.resolve(opts);
-		}]);
-		return deferred.promise;
 	}
 
 	var load=function(opts,cb) {
