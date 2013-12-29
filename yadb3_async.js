@@ -3,34 +3,16 @@
 	yapcheahshen@gmail.com
 	2013/12/28
 	asyncronize version of yadb, for HTML5 FileAPI
+
+  remove dependency of Q, thanks to
+  http://stackoverflow.com/questions/4234619/how-to-avoid-long-nesting-of-asynchronous-functions-in-node-js
+
+  
 */
 var Yfs=require('./yadb3_fs_async');	
+var DT=require('./datatypes');
 
-/*
-remove dependency of Q
-http://stackoverflow.com/questions/4234619/how-to-avoid-long-nesting-of-asynchronous-functions-in-node-js
-*/
-var DT={
-	uint8:'1', //unsigned 1 byte integer
-	int32:'4', // signed 4 bytes integer
-	utf8:'8',  
-	ucs2:'2',
-	bool:'^', 
-	blob:'&',
-	utf8arr:'*', //shift of 8
-	ucs2arr:'@', //shift of 2
-	uint8arr:'!', //shift of 1
-	int32arr:'$', //shift of 4
-	vint:'`',
-	pint:'~',	
-
-	array:'\u001b',
-	object:'\u001a' 
-	//ydb start with object signature,
-	//type a ydb in command prompt shows nothing
-}
-
-var Create=function(path,opts,createcb) {
+var Create=function(path,opts,cb_create) {
 	/* loadxxx functions move file pointer */
 	// load variable length int
 	
@@ -62,7 +44,7 @@ var Create=function(path,opts,createcb) {
 	var getArrayLength=function(opts,cb) {
 		var that=this;
 		var dataoffset=0;
-
+		
 		this.fs.readUI8(opts.cur,function(len){
 			var lengthoffset=len*4294967296;
 			opts.cur++;
@@ -139,6 +121,10 @@ var Create=function(path,opts,createcb) {
 		getArrayLength.apply(this,[opts,function(L) {
 			opts.blocksize=blocksize-opts.cur+start;
 			load.apply(that,[opts,function(keys){ //load the keys
+				if (opts.keys) { //caller ask for keys
+					keys.map(function(k) { opts.keys.push(k)});
+				}
+
 				var o={};
 				var endcur=opts.cur;
 				opts.cur=L.offset;
@@ -151,7 +137,6 @@ var Create=function(path,opts,createcb) {
 						offset+=L.sz[i];
 					}
 				} else {
-
 					var taskqueue=[];
 					for (var i=0;i<L.count;i++) {
 						taskqueue.push(
@@ -175,15 +160,15 @@ var Create=function(path,opts,createcb) {
 					taskqueue.push(function(data){
 						o[keys[keys.length-1]]=data;
 						opts.cur=endcur;
+
 						cb.apply(that,[o]);
 					});
 				}
-				if (opts.lazy) cb(o);
+				if (opts.lazy) cb.apply(that,[o]);
 				else {
 					taskqueue.shift()({__empty:true});
 				}
 			}]);
-
 		}]);
 	}
 
@@ -203,7 +188,6 @@ var Create=function(path,opts,createcb) {
 				cb.apply(that,[o]);
 			});
 		}]);
-
 	}
 	var loadBlob=function(blocksize,cb) {
 		var o=this.fs.readBuf(this.cur,blocksize);
@@ -262,7 +246,7 @@ var Create=function(path,opts,createcb) {
 			}
 			else {
 				console.error('unsupported type',signature,opts)
-				cb(null);//make sure it return
+				cb.apply(this,[null]);//make sure it return
 				//throw 'unsupported type '+signature;
 			}
 	}
@@ -278,67 +262,117 @@ var Create=function(path,opts,createcb) {
 	}
 	var CACHE=null;
 	var KEYS={};
-	var reset=function() {
-		CACHE=load({cur:0,lazy:true});
+	var reset=function(cb) {
+		if (!CACHE) {
+			load.apply(this,[{cur:0,lazy:true},function(data){
+				CACHE=data;
+				cb.call(this);
+			}]);	
+		} else {
+			cb.call(this);
+		}
 	}
 	var getall=function() {
+		throw 'not implement yet'
 		var output={};
 		var keys=getkeys();
 		for (var i in keys) {
 			output[keys[i]]= get([keys[i]],true);
 		}
 		return output;
-		
 	}
-	var exists=function(path) {
+	var exists=function(path,cb) {
 		if (path.length==0) return true;
 		var key=path.pop();
-		get(path);
-		if (!path.join('\0')) return (!!KEYS[key]);
-		var keys=KEYS[path.join('\0')];
-		path.push(key);//put it back
-		if (keys) return (keys.indexOf(key)>-1);
-		else return false;
+		var that=this;
+		get.apply(this,[path,false,function(data){
+			if (!path.join('\0')) return (!!KEYS[key]);
+			var keys=KEYS[path.join('\0')];
+			path.push(key);//put it back
+			if (keys) cb.apply(that,[keys.indexOf(key)>-1]);
+			else cb.apply(that,[false]);
+		}]);
 	}
-	var get=function(path,recursive) {
+
+	var get=function(path,recursive,cb) {
 		if (typeof path=='undefined') path=[];
 		recursive=recursive||false;
-		if (!CACHE) reset();	
-		var o=CACHE;
-		if (path.length==0 &&recursive) return getall();
-		var pathnow="";
-		for (var i=0;i<path.length;i++) {
-			var r=o[path[i]] ;
+		var that=this;
+		
+		reset.apply(this,[function(){
+			
+			var o=CACHE;
+			if (path.length==0 &&recursive) {
+				getall.apply(that,[cb]);
+				return;
+			} 
+			var lazy=!recursive || (i<path.length-1) ;
+			var pathnow="",taskqueue=[],opts={lazy:lazy},r=null;
+			var lastkey="";
+			for (var i=0;i<path.length;i++) {
+				var task=(function(key,k){
+					return (function(data){
+						if (!(typeof data=='object' && data.__empty)) {
+							if (typeof o[lastkey]=='string' && o[lastkey][0]=="\0") o[lastkey]={};
+							o[lastkey]=data; 
+							o=o[lastkey];
+							r=data[key];
+							KEYS[pathnow]=opts.keys;
+						} else {
+							data=o[key];
+							r=data;
+						}
 
-			if (r===undefined) return undefined;
-			if (parseInt(i)) pathnow+="\0";
-			pathnow+=path[i];
-			if (typeof r=='string' && r[0]=="\0") { //offset of data to be loaded
-				var keys=[];
-				var p=r.substring(1).split("\0").map(
-					function(item){return parseInt(item,16)});
-				this.cur=p[0];
-				var lazy=!recursive || (i<path.length-1) ;
-				o[path[i]]=load({lazy:lazy,blocksize:p[1],keys:keys});
-				KEYS[pathnow]=keys;
-				o=o[path[i]];
-			} else {
-				o=r; //already in cache
+						if (r===undefined) {
+							taskqueue=null;
+							cb.apply(that,[r]); //return empty value
+						} else {							
+							if (parseInt(k)) pathnow+="\0";
+							pathnow+=key;
+							if (typeof r=='string' && r[0]=="\0") { //offset of data to be loaded
+								var p=r.substring(1).split("\0").map(function(item){return parseInt(item,16)});
+								var cur=p[0],sz=p[1];
+								opts.blocksize=sz;opts.cur=cur,opts.keys=[];
+								load.apply(that,[opts, taskqueue.shift()]);
+								lastkey=key;
+							} else {
+								var next=taskqueue.shift();
+								next.apply(that,[r]);
+							}
+						}
+					})
+				})
+				(path[i],i);
+				
+				taskqueue.push(task);
 			}
-		}
-		return o;
+
+			if (taskqueue.length==0) {
+				cb.apply(that,[o]);
+			} else {
+				//last call to child load
+				taskqueue.push(function(data){
+					var key=path[path.length-1];
+					o[key]=data; KEYS[pathnow]=opts.keys;
+					cb.apply(that,[data]);
+				});
+				taskqueue.shift()({__empty:true});			
+			}
+
+		}]); //reset
 	}
 	// get all keys in given path
-	var getkeys=function(path) {
+	var getkeys=function(path,cb) {
 		if (!path) path=[]
-		get(path); // make sure it is loaded
-		if (path && path.length) {
-			return KEYS[path.join("\0")];
-		} else {
-			return Object.keys(CACHE); 
-			//top level, normally it is very small
-		}
-		
+		var that=this;
+		get.apply(this,[path,false,function(){
+			if (path && path.length) {
+				cb.apply(that,[KEYS[path.join("\0")]]);
+			} else {
+				cb.apply(that,[Object.keys(CACHE)]); 
+				//top level, normally it is very small
+			}
+		}]);
 	}
 
 	var setupapi=function() {
@@ -354,14 +388,14 @@ var Create=function(path,opts,createcb) {
 		this.get=get;   // get a field, load if needed
 		this.getJSON=get; //compatible with yadb2
 		this.exists=exists;
-		createcb(this);
+		cb_create(this);
 	}
 
 	this._setupapi=setupapi;
 
 	var that=this;
 
-	var yfs=new Yfs(path,opts,function(yfs){
+	var t=new Yfs(path,opts,function(yfs){
 		that.fs=yfs;
 		that.size=yfs.size;
 		that._setupapi.call(that);

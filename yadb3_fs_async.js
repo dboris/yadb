@@ -1,6 +1,13 @@
 /* OS dependent file operation */
 
-var fs=require('fs');
+if (chrome && chrome.fileSystem) {
+	var fs=require('./html5fs');
+	var Buffer=function(){ return ""};
+	var html5fs=true;
+} else {
+	var fs=require('fs');
+}
+
 var signature_size=1;
 
 var unpack_int = function (ar, count , reset) {
@@ -23,7 +30,7 @@ var unpack_int = function (ar, count , reset) {
   } while (i<ar.length && count);
   return {data:r, adv:i };
 }
-var Create=function(path,opts,cb) {
+var Open=function(path,opts,opencb) {
 	opts=opts||{};
 
 	var readSignature=function(pos,cb) {
@@ -57,7 +64,12 @@ var Create=function(path,opts,cb) {
 		var buffer=new Buffer(4);
 		var that=this;
 		fs.read(this.handle,buffer,0,4,pos,function(err,len,buffer){
-			cb.apply(that,[buffer.readUInt32BE(0)]);
+			if (html5fs){
+				var v=buffer.charCodeAt(0)*256*256*256
+				+buffer.charCodeAt(1)*256*256+buffer.charCodeAt(2)*256+buffer.charCodeAt(3);
+				cb(v);
+			}
+			else cb.apply(that,[buffer.readInt32BE(0)]);	
 		});
 		
 	}
@@ -65,14 +77,24 @@ var Create=function(path,opts,cb) {
 		var buffer=new Buffer(4);
 		var that=this;
 		fs.read(this.handle,buffer,0,4,pos,function(err,len,buffer){
-			cb.apply(that,[buffer.readInt32BE(0)]);
+			if (html5fs){
+				//need check
+				var v=buffer.charCodeAt(0)*256*256*256
+				+buffer.charCodeAt(1)*256*256+buffer.charCodeAt(2)*256+buffer.charCodeAt(3);
+				if (v>256*256*256*128) v=0xFFFFFFFF-v;
+				cb(v);
+			}
+			else  			cb.apply(that,[buffer.readInt32BE(0)]);	
 		});
 	}
 	var readUI8=function(pos,cb) {
 		var buffer=new Buffer(1);
 		var that=this;
+		
 		fs.read(this.handle,buffer,0,1,pos,function(err,len,buffer){
-			cb.apply(that,[buffer.readUInt8(0)]);
+			if (html5fs)cb(buffer.charCodeAt(0));
+			else  			cb.apply(that,[buffer.readUInt8(0)]);	
+			
 		});
 	}
 	var readBuf=function(pos,blocksize,cb) {
@@ -120,7 +142,7 @@ var Create=function(path,opts,cb) {
 
 	var free=function() {
 		//console.log('closing ',handle);
-		fs.closeSync(this.handle);
+		fs.close(this.handle);
 	}
 	var setupapi=function() {
 		this.readSignature=readSignature;
@@ -138,7 +160,7 @@ var Create=function(path,opts,cb) {
 	  fs.fstat(this.handle,function(err,data){
 			that.stat=data;
 			that.size=that.stat.size;
-			if (cb) cb(that);
+			if (opencb) opencb(that);
 		});				
 	}
 	this._setupapi=setupapi;
@@ -146,23 +168,14 @@ var Create=function(path,opts,cb) {
 	//handle=fs.openSync(path,'r');
 	//console.log('watching '+path);
 	var that=this;
-	fs.exists(path,function(exists){
-		if (exists) {
-			fs.open(path,'r',function(err,handle){
-				that.handle=handle;
-				that.opened=true;
-				that._setupapi.call(that);
-			});
-		} else {
-			fs.open('../'+path,'r',function(err,handle){
-				that.handle=handle;
-				that.opened=true;
-				that._setupapi.call(that);
-			});
-		}
+
+	fs.open(path,'r',function(err,handle){
+		that.handle=handle;
+		that.opened=true;
+		that._setupapi.call(that);
 	});
-	
+
 	//console.log('file size',path,this.size);	
 	return this;
 }
-module.exports=Create;
+module.exports=Open;

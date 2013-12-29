@@ -9,9 +9,9 @@
   },
   "development": {},
   "license": "MIT",
-  "main": "index.js",
+  "main": "index_chrome.js",
   "scripts": [
-    "index.js","yadb_api.js","yadb3.js","yadb3_fs_html5.js"
+    "index_chrome.js","datatypes.js","yadb3_async.js","yadb3_fs_async.js","html5fs.js"
   ],
   "remotes": []
 }

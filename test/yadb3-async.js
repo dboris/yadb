@@ -6,7 +6,7 @@ var Yadb3=require('../yadb3_async'),
 	Yadb3_fs=require('../yadb3_fs_async');
 
 console.log('yadb3 test suite');
-
+/*
 QUnit.asyncTest('read int32',function(){
     var topic=new Yadb3_fs('i32.ydb',{},function(topic){
 			  topic.readUI32(topic.signature_size,function(out){
@@ -160,48 +160,51 @@ QUnit.asyncTest('load json',function(){
 		});	
 	});
 });
-
-
-/*
-
-QUnit.test('lazy get',function(){
-		var topic=new Yadb3('json.ydb');
-		var out=topic.get();
-		console.log(out);
-		deepEqual(Object.keys(out),
-				['a','b','c','d','e'],
-				'lazy object'+JSON.stringify(out));
-
-		var out_d_x=topic.get(['d','x'])
-		equal(out_d_x,"a10",
-				'lazy object'+out_d_x);	
-
-		var out_d_keys=topic.keys(['d']);
-		deepEqual(out_d_keys,['x','y','z'],
-				'keys of d'+JSON.stringify(out_d_keys));
-
-
-		
-		var out_d=topic.get(['d'])
-		deepEqual(Object.keys(out_d),
-			["x","y","z"],
-			'lazy object'+JSON.stringify(out_d));
-		
-		console.log('in cache',topic.cache());			
-		
-		var out_c=topic.get(['c'],true)
-		deepEqual(out_c,[5,4,3],
-			'lazy object'+ JSON.stringify(out_c));	
-
-		console.log(topic.cache());		
-
-		var out_f=topic.get(['f'])
-		equal(out_f,undefined,
-			'lazy object'+out_f);	
-
-		console.log(topic.cache());	
-			//console.log('keys',topic.keys());	
-		
-		topic.free();
-});
 */
+
+QUnit.asyncTest('lazy get',function(){
+	var topic=new Yadb3('json.ydb',{},function(topic){
+
+		topic.get( [], false,function(out){
+			console.log(out);
+			deepEqual(Object.keys(out),
+					['a','b','c','d','e'],
+					'lazy object'+JSON.stringify(out));
+		
+		});
+	
+		topic.get(['d','x'],false,function(out){
+				equal(out,"a10",'lazy object'+out);	
+				console.log('in cache',topic.cache())
+		});	
+
+		topic.get(['d'],false,function(out){
+			console.log('out',out)
+				deepEqual(Object.keys(out),['x','y','z'],'keys of d'+JSON.stringify(out));
+		});	
+
+
+		topic.keys(['d'],function(out){
+			deepEqual(out,['x','y','z'],'keys of d'+JSON.stringify(out));
+			//console.log('in cache',topic.cache());			
+		});
+		
+
+		
+		topic.get(['c'],true,function(out){
+			deepEqual(out,[5,4,3],
+			'lazy object'+ JSON.stringify(out));	
+			//console.log('in cache2',topic.cache());		
+
+		});
+
+		topic.get(['f'],true,function(out){
+			equal(out,undefined,'lazy object'+out);	
+			//console.log('in cache2',topic.cache());		
+				start();
+		});	
+
+
+		});
+});
+
