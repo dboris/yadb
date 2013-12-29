@@ -1,6 +1,7 @@
 /* OS dependent file operation */
 
-if (chrome && chrome.fileSystem) {
+if (typeof chrome!=='undefined' && chrome.fileSystem) {
+
 	var fs=require('./html5fs');
 	var Buffer=function(){ return ""};
 	var html5fs=true;
@@ -73,6 +74,7 @@ var Open=function(path,opts,opencb) {
 		});
 		
 	}
+
 	var readI32=function(pos,cb) {
 		var buffer=new Buffer(4);
 		var that=this;
@@ -90,7 +92,7 @@ var Open=function(path,opts,opencb) {
 	var readUI8=function(pos,cb) {
 		var buffer=new Buffer(1);
 		var that=this;
-		
+
 		fs.read(this.handle,buffer,0,1,pos,function(err,len,buffer){
 			if (html5fs)cb(buffer.charCodeAt(0));
 			else  			cb.apply(that,[buffer.readUInt8(0)]);	
@@ -101,7 +103,11 @@ var Open=function(path,opts,opencb) {
 		var that=this;
 		var buf=new Buffer(blocksize);
 		fs.read(this.handle,buf,0,blocksize,pos,function(err,len,buffer){
-			cb.apply(that,[buffer]);
+			var buff=[];
+			for (var i=0;i<len;i++) {
+				buff[i]=buffer.charCodeAt(i);
+			}
+			cb.apply(that,[buff]);
 		});
 	}
 	var readBuf_packedint=function(pos,blocksize,count,reset,cb) {
@@ -110,6 +116,36 @@ var Open=function(path,opts,opencb) {
 			cb.apply(that,[unpack_int(buffer,count,reset)]);	
 		}]);
 		
+	}
+	var readFixedArray_html5fs=function(pos,count,unitsize,cb) {
+		var func=null;
+		var buf2UI32BE=function(buf,p) {
+			return buf.charCodeAt(p)*256*256*256
+					+buf.charCodeAt(p+1)*256*256
+					+buf.charCodeAt(p+2)*256+buf.charCodeAt(p+3);
+		}
+		var buf2UI16BE=function(buf,p) {
+			return buf.charCodeAt(p)*256
+					+buf.charCodeAt(p+1);
+		}
+		var buf2UI8=function(buf,p) {
+			return buf.charCodeAt(p);
+		}
+		if (unitsize===1) {
+			func=buf2UI8;
+		} else if (unitsize===2) {
+			func=buf2UI16BE;
+		} else if (unitsize===4) {
+			func=buf2UI32BE;
+		} else throw 'unsupported integer size';
+
+		fs.read(this.handle,null,0,unitsize*count,pos,function(err,len,buffer){
+			var out=[];
+			for (var i = 0; i < len / unitsize; i++) {
+				out.push( func(buffer,i*unitsize));
+			}
+			cb.apply(that,[out]);
+		});
 	}
 	// signature, itemcount, payload
 	var readFixedArray = function(pos ,count, unitsize,cb) {
@@ -121,6 +157,8 @@ var Open=function(path,opts,opencb) {
 			return;
 		}
 		
+		if (html5fs) return readFixedArray_html5fs.apply(this,[pos,count,unitsize,cb]);
+
 		var items=new Buffer( unitsize* count);
 		if (unitsize===1) {
 			func=items.readUInt8;
@@ -173,7 +211,7 @@ var Open=function(path,opts,opencb) {
 		that.handle=handle;
 		that.opened=true;
 		that._setupapi.call(that);
-	});
+	},opts.inMemory);
 
 	//console.log('file size',path,this.size);	
 	return this;

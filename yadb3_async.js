@@ -44,7 +44,7 @@ var Create=function(path,opts,cb_create) {
 	var getArrayLength=function(opts,cb) {
 		var that=this;
 		var dataoffset=0;
-		
+
 		this.fs.readUI8(opts.cur,function(len){
 			var lengthoffset=len*4294967296;
 			opts.cur++;
@@ -209,6 +209,7 @@ var Create=function(path,opts,cb_create) {
 				var c=opts.cur;opts.cur+=datasize;
 				this.fs.readString(c,datasize,'utf8',cb);	
 			} else if (signature===DT.ucs2) {
+				throw 'ucs2 not supported'
 				var c=opts.cur;opts.cur+=datasize;
 				this.fs.readString(c,datasize,'ucs2',cb);	
 			} else if (signature===DT.bool) {
@@ -219,16 +220,17 @@ var Create=function(path,opts,cb_create) {
 			}
 			//variable length integers
 			else if (signature===DT.vint) {
-				loadVInt.apply(this,[opts,datasize,null,cb]);
+				loadVInt.apply(this,[opts,datasize,datasize,cb]);
 			}
 			else if (signature===DT.pint) {
-				loadPInt.apply(this,[opts,datasize,null,cb]);
+				loadPInt.apply(this,[opts,datasize,datasize,cb]);
 			}
 			//simple array
 			else if (signature===DT.utf8arr) {
 				loadStringArray.apply(this,[opts,datasize,'utf8',cb]);
 			}
 			else if (signature===DT.ucs2arr) {
+				throw 'ucs2 not supported'
 				loadStringArray.apply(this,[opts,datasize,'ucs2',cb]);
 			}
 			else if (signature===DT.uint8arr) {
@@ -298,9 +300,9 @@ var Create=function(path,opts,cb_create) {
 		if (typeof path=='undefined') path=[];
 		recursive=recursive||false;
 		var that=this;
-		
+
 		reset.apply(this,[function(){
-			
+
 			var o=CACHE;
 			if (path.length==0 &&recursive) {
 				getall.apply(that,[cb]);
