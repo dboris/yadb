@@ -209,7 +209,6 @@ var Create=function(path,opts,cb_create) {
 				var c=opts.cur;opts.cur+=datasize;
 				this.fs.readString(c,datasize,'utf8',cb);	
 			} else if (signature===DT.ucs2) {
-				throw 'ucs2 not supported'
 				var c=opts.cur;opts.cur+=datasize;
 				this.fs.readString(c,datasize,'ucs2',cb);	
 			} else if (signature===DT.bool) {
@@ -230,7 +229,6 @@ var Create=function(path,opts,cb_create) {
 				loadStringArray.apply(this,[opts,datasize,'utf8',cb]);
 			}
 			else if (signature===DT.ucs2arr) {
-				throw 'ucs2 not supported'
 				loadStringArray.apply(this,[opts,datasize,'ucs2',cb]);
 			}
 			else if (signature===DT.uint8arr) {

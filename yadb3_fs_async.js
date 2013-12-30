@@ -38,12 +38,18 @@ var Open=function(path,opts,opencb) {
 		var buf=new Buffer(signature_size);
 		var that=this;
 		fs.read(this.handle,buf,0,signature_size,pos,function(err,len,buffer){
-			var signature=buffer.toString('utf8',0,signature_size);
+			if (html5fs) var signature=String.fromCharCode((new Uint8Array(buffer))[0])
+			else var signature=buffer.toString('utf8',0,signature_size);
 			cb.apply(that,[signature]);
 		});
 	}
 
 	//this is quite slow
+	//wait for StringView +ArrayBuffer to solve the problem
+	//https://groups.google.com/a/chromium.org/forum/#!topic/blink-dev/ylgiNY_ZSV0
+	//if the string is always ucs2
+	//can use Uint16 to read it.
+	//http://updates.html5rocks.com/2012/06/How-to-convert-ArrayBuffer-to-and-from-String
   var decodeutf8 = function (utftext) {
         var string = "";
         var i = 0;
@@ -83,7 +89,15 @@ var Open=function(path,opts,opencb) {
 		var buffer=new Buffer(blocksize);
 		var that=this;
 		fs.read(this.handle,buffer,0,blocksize,pos,function(err,len,buffer){
-			if (html5fs) cb.apply(that,[decodeutf8(buffer)])
+			if (html5fs) {
+				if (encoding=='utf8') {
+					var str=decodeutf8(String.fromCharCode.apply(null, new Uint8Array(buffer)))
+				} else { //ucs2 is 3 times faster
+					var str=String.fromCharCode.apply(null, new Uint16Array(buffer))	
+				}
+				
+				cb.apply(that,[str]);
+			} 
 			else cb.apply(that,[buffer.toString(encoding)]);	
 		});
 	}
@@ -94,9 +108,15 @@ var Open=function(path,opts,opencb) {
 		encoding=encoding||'utf8';
 		var buffer=new Buffer(blocksize);
 		fs.read(this.handle,buffer,0,blocksize,pos,function(err,len,buffer){
-		  if (html5fs) out=decodeutf8(buffer).split('\0');
-			else 
-			out=buffer.toString(encoding).split('\0');
+		  if (html5fs) {
+				if (encoding=='utf8') {
+					var str=decodeutf8(String.fromCharCode.apply(null, new Uint8Array(buffer)))
+				} else { //ucs2 is 3 times faster
+					var str=String.fromCharCode.apply(null, new Uint16Array(buffer))	
+				}		  	
+		  	out=str.split('\0');
+		  }
+			else 	out=buffer.toString(encoding).split('\0');
 			cb.apply(that,[out]);
 		});
 	}
@@ -105,8 +125,8 @@ var Open=function(path,opts,opencb) {
 		var that=this;
 		fs.read(this.handle,buffer,0,4,pos,function(err,len,buffer){
 			if (html5fs){
-				var v=buffer.charCodeAt(0)*256*256*256
-				+buffer.charCodeAt(1)*256*256+buffer.charCodeAt(2)*256+buffer.charCodeAt(3);
+				//v=(new Uint32Array(buffer))[0];
+				v=new DataView(buffer).getUint32(0, false)
 				cb(v);
 			}
 			else cb.apply(that,[buffer.readInt32BE(0)]);	
@@ -119,10 +139,7 @@ var Open=function(path,opts,opencb) {
 		var that=this;
 		fs.read(this.handle,buffer,0,4,pos,function(err,len,buffer){
 			if (html5fs){
-				//need check
-				var v=buffer.charCodeAt(0)*256*256*256
-				+buffer.charCodeAt(1)*256*256+buffer.charCodeAt(2)*256+buffer.charCodeAt(3);
-				if (v>256*256*256*128) v=0xFFFFFFFF-v;
+				v=new DataView(binaryArrayBuffer).getInt32(0, false)
 				cb(v);
 			}
 			else  			cb.apply(that,[buffer.readInt32BE(0)]);	
@@ -133,7 +150,7 @@ var Open=function(path,opts,opencb) {
 		var that=this;
 
 		fs.read(this.handle,buffer,0,1,pos,function(err,len,buffer){
-			if (html5fs)cb(buffer.charCodeAt(0));
+			if (html5fs)cb( (new Uint8Array(buffer))[0]) ;
 			else  			cb.apply(that,[buffer.readUInt8(0)]);	
 			
 		});
@@ -142,10 +159,13 @@ var Open=function(path,opts,opencb) {
 		var that=this;
 		var buf=new Buffer(blocksize);
 		fs.read(this.handle,buf,0,blocksize,pos,function(err,len,buffer){
+			/*
 			var buff=[];
 			for (var i=0;i<len;i++) {
 				buff[i]=buffer.charCodeAt(i);
 			}
+			*/
+			buff=new Uint8Array(buffer)
 			cb.apply(that,[buff]);
 		});
 	}
@@ -158,6 +178,7 @@ var Open=function(path,opts,opencb) {
 	}
 	var readFixedArray_html5fs=function(pos,count,unitsize,cb) {
 		var func=null;
+		/*
 		var buf2UI32BE=function(buf,p) {
 			return buf.charCodeAt(p)*256*256*256
 					+buf.charCodeAt(p+1)*256*256
@@ -170,19 +191,26 @@ var Open=function(path,opts,opencb) {
 		var buf2UI8=function(buf,p) {
 			return buf.charCodeAt(p);
 		}
+		*/
 		if (unitsize===1) {
-			func=buf2UI8;
+			func='getUint8';//Uint8Array;
 		} else if (unitsize===2) {
-			func=buf2UI16BE;
+			func='getUint16';//Uint16Array;
 		} else if (unitsize===4) {
-			func=buf2UI32BE;
+			func='getUint32';//Uint32Array;
 		} else throw 'unsupported integer size';
 
 		fs.read(this.handle,null,0,unitsize*count,pos,function(err,len,buffer){
 			var out=[];
-			for (var i = 0; i < len / unitsize; i++) {
-				out.push( func(buffer,i*unitsize));
+			if (unitsize==1) {
+				out=new Uint8Array(buffer);
+			} else {
+				for (var i = 0; i < len / unitsize; i++) { //endian problem
+				//	out.push( func(buffer,i*unitsize));
+					out.push( v=new DataView(buffer)[func](0,false) );
+				}
 			}
+
 			cb.apply(that,[out]);
 		});
 	}

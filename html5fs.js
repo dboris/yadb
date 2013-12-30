@@ -11,8 +11,8 @@ var _read=function(handle,position,length,callback) {
       callback(e.target.result);
     };
     var blob = handle.slice(position,position+length);
-    reader.readAsBinaryString(blob);
-    //reader.readAsArrayBuffer(blob);
+    //reader.readAsBinaryString(blob);
+    reader.readAsArrayBuffer(blob);
 }
 
 var read=function(handle,buffer,offset,length,position,cb) {	 //buffer and offset is not used
