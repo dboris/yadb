@@ -42,12 +42,49 @@ var Open=function(path,opts,opencb) {
 			cb.apply(that,[signature]);
 		});
 	}
+
+	//this is quite slow
+  var decodeutf8 = function (utftext) {
+        var string = "";
+        var i = 0;
+        var c = c1 = c2 = 0;
+ 				for (var i=0;i<utftext.length;i++) {
+ 					if (utftext.charCodeAt(i)>127) break;
+ 				}
+ 				if (i>=utftext.length) return utftext;
+
+        while ( i < utftext.length ) {
+ 
+            c = utftext.charCodeAt(i);
+ 
+            if (c < 128) {
+                string += utftext[i];
+                i++;
+            }
+            else if((c > 191) && (c < 224)) {
+                c2 = utftext.charCodeAt(i+1);
+                string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
+                i += 2;
+            }
+            else {
+                c2 = utftext.charCodeAt(i+1);
+                c3 = utftext.charCodeAt(i+2);
+                string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+                i += 3;
+            }
+ 
+        }
+ 
+        return string;
+  }
+
 	var readString= function(pos,blocksize,encoding,cb) {
 		encoding=encoding||'utf8';
 		var buffer=new Buffer(blocksize);
 		var that=this;
 		fs.read(this.handle,buffer,0,blocksize,pos,function(err,len,buffer){
-			cb.apply(that,[buffer.toString(encoding)]);	
+			if (html5fs) cb.apply(that,[decodeutf8(buffer)])
+			else cb.apply(that,[buffer.toString(encoding)]);	
 		});
 	}
 
@@ -57,7 +94,9 @@ var Open=function(path,opts,opencb) {
 		encoding=encoding||'utf8';
 		var buffer=new Buffer(blocksize);
 		fs.read(this.handle,buffer,0,blocksize,pos,function(err,len,buffer){
-			var out=buffer.toString(encoding).split('\0');
+		  if (html5fs) out=decodeutf8(buffer).split('\0');
+			else 
+			out=buffer.toString(encoding).split('\0');
 			cb.apply(that,[out]);
 		});
 	}
