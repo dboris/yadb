@@ -210,7 +210,7 @@ var installservice=function(services) { // so that it is possible to call other 
 		getRaw:getRaw,
 		closeAll:closeAll,
 		open:open,
-		version: function() { return require('./package.json').version }
+		version: '0.2.0'//function() { return require('./package.json').version }
 	};
 
 	if (!initialized && services) {

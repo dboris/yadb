@@ -7,9 +7,9 @@
 var Yfs=require('./yadb3_fs');	
 var DT=require('./datatypes');
 
-var Create=function(path,opts) {
-	var yfs=new Yfs(path,opts);
-	this.fs=yfs
+var Open=function(path,opts,callback) {
+
+	
 	var cur=0;
 	/* loadxxx functions move file pointer */
 	// load variable length int
@@ -75,6 +75,9 @@ var Create=function(path,opts) {
 		var lengths=loadVInt(count*6,count);
 		var keyssize=blocksize-cur+start;	
 		var K=load({blocksize:keyssize});
+		if (lengths.length!=K.length) {
+			console.log('object key error')
+		}
 		var o={};
 		var endcur=cur;
 		
@@ -226,15 +229,25 @@ var Create=function(path,opts) {
 		KEYS=null;
 		yfs.free();
 	}
+
+	var that=this;
+	var yfs=null;
+	new Yfs(path,opts,function(handle){
+		yfs=handle;
+		that.size=yfs.size;
+		if (callback) callback(that);
+	});
+
 	this.load=load;
 	this.cache=function() {return CACHE};
 	this.keys=getkeys;
 	this.get=get;   // get a field, load if needed
 	this.getJSON=get; //compatible with yadb2
 	this.exists=exists;	
-	this.size=yfs.size;
+	
+
 	return this;
 }
-Create.datatypes=DT;
-if (module) module.exports=Create;
+Open.datatypes=DT;
+if (module) module.exports=Open;
 //return Create;

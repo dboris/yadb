@@ -3,6 +3,13 @@ http://stackoverflow.com/questions/3146483/html5-file-api-read-as-text-and-binar
 
 automatic open file without user interaction
 http://stackoverflow.com/questions/18251432/read-a-local-file-using-javascript-html5-file-api-offline-website
+
+extension id
+ chrome.runtime.getURL("vrimul.ydb")
+"chrome-extension://nfdipggoinlpfldmfibcjdobcpckfgpn/vrimul.ydb"
+ tell user to switch to the directory
+
+ getPackageDirectoryEntry
 */
 var _read=function(handle,position,length,callback) {
     var reader = new FileReader();
@@ -15,6 +22,10 @@ var _read=function(handle,position,length,callback) {
     reader.readAsArrayBuffer(blob);
 }
 
+var readSyncronize=function(handle,length,position){
+    var sliced=handle._buf.slice(position,position+length);
+    return sliced;
+}
 var read=function(handle,buffer,offset,length,position,cb) {	 //buffer and offset is not used
 	if (handle._buf)	{
     var sliced=handle._buf.slice(position,position+length);
@@ -30,6 +41,9 @@ var read=function(handle,buffer,offset,length,position,cb) {	 //buffer and offse
 
 var close=function(handle) {
 	//nop
+}
+var fstatSync=function(handle) {
+  return {size:handle.size,mtime:handle.lastModifiedDate};
 }
 var fstat=function(handle,cb) {
 	setTimeout(
@@ -63,7 +77,6 @@ var choosefile=function(filename,cb,autoload){
     		});
   });	
 }
-
 var open=function(filename,mode,cb,autoload) {
 	var entryname='entry!'+filename;
   // see if the app retained access to an earlier file or directory
@@ -77,12 +90,17 @@ var open=function(filename,mode,cb,autoload) {
           		else cb(0,handle);
           	});
           	return;
+          } else { //something wrong , chooseagain
+            choosefile(filename,cb,autoload);
           }
         });
       });
     } else choosefile(filename,cb,autoload);
   });
 }
+var load=function(filename,mode,cb) {
+  open(filename,mode,cb,true);
+}
 
 
-module.exports={open:open,read:read,fstat:fstat,close:close}
+module.exports={load:load,open:open,read:read,readSyncronize:readSyncronize,fstatSync:fstatSync,fstat:fstat,close:close}

@@ -207,7 +207,7 @@ var Open=function(path,opts,opencb) {
 			} else {
 				for (var i = 0; i < len / unitsize; i++) { //endian problem
 				//	out.push( func(buffer,i*unitsize));
-					out.push( v=new DataView(buffer)[func](0,false) );
+					out.push( v=new DataView(buffer)[func](i,false) );
 				}
 			}
 

@@ -11,7 +11,7 @@
   "license": "MIT",
   "main": "index_chrome.js",
   "scripts": [
-    "index_chrome.js","datatypes.js","yadb3_async.js","yadb3_fs_async.js","html5fs.js"
+    "index_chrome.js","datatypes.js","yadb3.js","yadb3_fs.js","html5fs.js"
   ],
   "remotes": []
 }
