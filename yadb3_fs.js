@@ -53,7 +53,7 @@ var Open=function(path,opts,callback) {
  					if (utftext.charCodeAt(i)>127) break;
  				}
  				if (i>=utftext.length) return utftext;
-
+ 				i=0;
         while ( i < utftext.length ) {
  
             c = utftext.charCodeAt(i);
