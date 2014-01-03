@@ -24,7 +24,7 @@ var unpack_int = function (ar, count , reset) {
 	  v += ((ar[i] & 0x7F) << shift);
 	  shift += 7;	  
 	} while (ar[++i] & 0x80);
-	r.push(v); if (reset) v=0;
+	r.push(v|0); if (reset) v=0;
 	count--;
   } while (i<ar.length && count);
   return {data:r, adv:i };

@@ -1,5 +1,5 @@
 /* yadb pool */
-var fs=require('fs');
+
 var Yadb=require('./yadb3');
 var DB={};
 var ydbfiles=[];
@@ -12,7 +12,26 @@ var known=function(id) {
 	}
 };
 /* try working folder first, than other folders, finally ydb folder*/
-var open=function(dbn,opts) {
+var open=function(db) {
+	return DB[db];
+}
+
+var prepare=function(opts,callback) {
+	if (DB[opts.db]) callback(DB[opts.db]);
+	else {
+		new Yadb(opts.db,{inMemory:true},function(handle){
+			if (opts.customfunc) {
+				handle.customfunc=opts.customfunc;
+			}
+			db=opts.db;
+			if (opts.db.indexOf('/')>-1) db=db.match(/.*\/(.*)$/)[1];
+			console.log('open ',db);
+			DB[db]=handle;
+			if(callback) callback(0,handle);//promise
+		})
+	}
+}
+var open_legacy=function(dbn,opts) {
 	opts=opts||{};
 	var dbid="";
 	/* TODO , ydb in the index.html folder has top priority */
@@ -206,18 +225,23 @@ var hasParentFolder=function() {
 }
 var installservice=function(services) { // so that it is possible to call other services
 	var API={ 
-		listydb:listydb,
-		getRaw:getRaw,
+		listydb:listydb, //only with node.js
+		getRaw:getRaw,   //only with node.js 
 		closeAll:closeAll,
+		prepare:prepare,
 		open:open,
-		version: '0.2.0'//function() { return require('./package.json').version }
+		//version: '0.2.0'//function() { return require('./package.json').version }
 	};
 
 	if (!initialized && services) {
 		services['yadb']=API;
-		if (hasParentFolder()) ydbfiles=listydb(".."); //search other folder
-		else ydbfiles=listydb(); //deploy version, no other app folder
-		console.info("yadb installed, found ydb",ydbfiles);
+		/*
+		if (typeof process!=='undefined') {
+			if (hasParentFolder()) ydbfiles=listydb(".."); //search other folder
+			else ydbfiles=listydb(); //deploy version, no other app folder
+			console.info("yadb installed, found ydb",ydbfiles);
+		}
+		*/
 		initialized=true;
 	}
 	return API;

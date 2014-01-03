@@ -2,14 +2,14 @@
 	YADB version 3.0 GPL
 	yapcheahshen@gmail.com
 	2013/2/14
+	2014/1/1 add support to html5 fileapi
 */
 
 var Yfs=require('./yadb3_fs');	
 var DT=require('./datatypes');
 
 var Open=function(path,opts,callback) {
-
-	
+	if (path.indexOf('.ydb')==-1) path+='.ydb';
 	var cur=0;
 	/* loadxxx functions move file pointer */
 	// load variable length int
